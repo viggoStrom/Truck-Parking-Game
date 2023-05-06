@@ -7,10 +7,8 @@ const ctx = canvas.getContext("2d")
 canvas.height = 1080
 canvas.width = 1920
 
-// const whiteTruck = new truck(canvas.width / 2, canvas.height * 1.6 / 4)
-// const whiteTrailer = new trailer([whiteTruck], canvas.width / 2, canvas.height * 3 / 4, 0)
-const whiteTruck = new truck()
-const whiteTrailer = new trailer([whiteTruck])
+const whiteTruck = new truck(canvas.width / 2, canvas.height * 1.6 / 4)
+const whiteTrailer = new trailer([whiteTruck], canvas.width / 2, canvas.height * 3 / 4, 0)
 
 
 // DEBUG
@@ -21,11 +19,14 @@ const directionDeltaStat = document.getElementById("directionDelta")
 const directionStat = document.getElementById("direction")
 const fpsStat = document.getElementById("fps")
 const hookedStat = document.getElementById("hooked")
+const breakingStat = document.getElementById("breaking")
 
 const velocityTrailerStat = document.getElementById("velocityTrailer")
 const frictionTrailerStat = document.getElementById("frictionTrailer")
 const directionTrailerStat = document.getElementById("directionTrailer")
 const hookedTrailerStat = document.getElementById("hookedTrailer")
+const canHookStat = document.getElementById("canHook")
+const breakingTrailerStat = document.getElementById("breakingTrailer")
 let frameTime = 0
 let fps = 0
 let i = 0
@@ -33,7 +34,7 @@ const DEBUG_frameInfo = (truck, trailer) => {
     fps = Math.floor(1000 / (Date.now() - frameTime))
     frameTime = Date.now()
 
-    if (i > 20) {
+    if (i > 16) {
         try {
             velocityStat.innerText = "Vel: " + truck.velocity.toFixed(1)
             accelerationStat.innerText = "Acc: " + truck.acceleration.toFixed(1)
@@ -42,11 +43,14 @@ const DEBUG_frameInfo = (truck, trailer) => {
             directionStat.innerText = "Dir: " + truck.direction.toFixed(1)
             fpsStat.innerText = "FPS: " + fps
             hookedStat.innerText = "Hooked: " + truck.hooked
-
+            breakingStat.innerText = "Breaking: " + truck.break
+            
             velocityTrailerStat.innerText = "Vel: " + trailer.velocity.toFixed(1)
             frictionTrailerStat.innerText = "Fri: " + trailer.friction.toFixed(1)
             directionTrailerStat.innerText = "Dir: " + trailer.direction.toFixed(1)
             hookedTrailerStat.innerText = "Hooked: " + trailer.hooked
+            canHookStat.innerText = "Can Hook: " + trailer.canHook
+            breakingTrailerStat.innerText = "Breaking: " + trailer.break
         } catch (error) {
 
         }

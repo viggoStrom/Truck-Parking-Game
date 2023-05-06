@@ -20,6 +20,7 @@ class trailer {
         this.attachPointY = this.centerY - this.length + 150
         this.direction = direction
         this.velocity = 0
+        this.break = false
 
         this.hooked = false
         this.hookedBy = ""
@@ -47,19 +48,19 @@ class trailer {
         let x, y, w, h
 
         // Parking Space
-        this.ctx.strokeStyle = "green"
-        // this.ctx.strokeStyle = this.color
-        this.ctx.lineWidth = 100
-        this.ctx.globalAlpha = 0.8
-        x = 100
-        y = 100
-        w = this.width * 1.2
-        h = this.height * 1.2
-        this.ctx.beginPath()
-        this.ctx.roundRect(x, y, w, h)
-        this.ctx.closePath()
-        this.ctx.stroke()
-        this.ctx.globalAlpha = 1
+        // this.ctx.strokeStyle = "green"
+        // // this.ctx.strokeStyle = this.color
+        // this.ctx.lineWidth = 100
+        // this.ctx.globalAlpha = 0.8
+        // x = 100
+        // y = 100
+        // w = this.width * 1.2
+        // h = this.height * 1.2
+        // this.ctx.beginPath()
+        // this.ctx.roundRect(x, y, w, h)
+        // this.ctx.closePath()
+        // this.ctx.stroke()
+        // this.ctx.globalAlpha = 1
 
 
         // Wheels
@@ -117,6 +118,7 @@ class trailer {
         this.ctx.fill()
         this.ctx.restore()
 
+
         // Can Hook Prompt
         if (this.canHook == true) {
             ctx.fillStyle = "rgba(0,0,0,0.5)"
@@ -134,8 +136,10 @@ class trailer {
 
     move() {
         // Update Attach Points 
+        this.spineLength = this.length - 150
         this.attachPointX = this.centerX + Math.sin(this.direction) * this.spineLength
         this.attachPointY = this.centerY - Math.cos(this.direction) * this.spineLength
+
 
         // Wall collision
         if (this.centerX > canvas.width - 45) { this.centerX = canvas.width - 45; this.velocity = -this.velocity * 0.2 }
@@ -157,21 +161,53 @@ class trailer {
         else if (this.velocity > 0) { this.velocity -= this.friction / (this.cargoMass + this.dryMass) }
 
 
+        // Calculate Velocity
+        this.trucks.forEach(truck => {
+            if (this.hooked && truck.id == this.hookedBy) {
+                const deltaX = truck.centerX - this.centerX
+                const deltaY = truck.centerY - this.centerY
+                const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2)
+                const deltaAngle = this.direction - truck.direction
+
+                if (truck.velocity == 0) {
+                    this.velocity = 0
+                }
+                else if (Math.abs(distance - this.spineLength) < .05) {
+                    this.velocity = truck.velocity * Math.cos(deltaAngle)
+                }
+                else if (distance > this.spineLength && (truck.velocity > 0 || truck.velocity < 0)) {
+                    this.velocity += 0.02 + (truck.velocity / 100) * Math.cos(deltaAngle)
+                }
+                else if (distance < this.spineLength && (truck.velocity > 0 || truck.velocity < 0)) {
+                    this.velocity -= 0.02 - (truck.velocity / 100) * Math.cos(deltaAngle)
+                }
+            }
+        })
+
+
         // Apply Velocity to Truck Position
         this.centerX += this.velocity * Math.sin(this.direction)
         this.centerY -= this.velocity * Math.cos(this.direction)
 
 
         // Breaking
-        if (this.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass) }
-        if (this.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass) }
+        this.trucks.forEach(truck => {
+            if (truck.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass); }
+            // if (truck.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass); }
+        })
 
         // Turn to Truck
         this.trucks.forEach(truck => {
             if (this.hooked && truck.id == this.hookedBy) {
-                let deltaX = truck.centerX - this.centerX
-                let deltaY = this.centerY - truck.centerY
-                this.direction = Math.atan(deltaX / deltaY)
+                const deltaX = truck.centerX - this.centerX
+                const deltaY = this.centerY - truck.centerY
+                const c = Math.sqrt(deltaX ** 2 + deltaY ** 2)
+
+                if (truck.centerX > this.centerX) {
+                    this.direction = -Math.asin(deltaY / c) + Math.PI / 2
+                } else {
+                    this.direction = Math.asin(deltaY / c) - Math.PI / 2
+                }
             }
         })
 
@@ -201,6 +237,7 @@ class trailer {
             ) {
                 // Unhooks Trailer
                 this.hooked = false
+                truck.mass -= (this.cargoMass + this.dryMass)
             }
             else if (
                 truck.id != this.hookedBy &&
@@ -214,6 +251,7 @@ class trailer {
                 // Hooks Trailer
                 this.hooked = true
                 this.hookedBy = truck.id
+                truck.mass += (this.cargoMass + this.dryMass)
             }
         })
     }

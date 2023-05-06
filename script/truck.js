@@ -10,7 +10,7 @@ class truck {
 
         this.color = "white"
         this.cabWidth = 100
-        this.cabLength = 90
+        this.cabLength = 85
         this.width = 95
         this.length = 220
         this.widthDelta = (this.cabWidth - this.width) / 2
@@ -28,21 +28,23 @@ class truck {
         this.hooked = false
 
 
-        const inputDownKeys = document.addEventListener("keydown", key => {
-            if (key.ctrlKey && key.key != "r") { key.preventDefault() }
-            if (key.key == "w") { this.forward = true }
-            if (key.key == "s") { this.backward = true }
-            if (key.key == "d") { this.rightTurn = true }
-            if (key.key == "a") { this.leftTurn = true }
-            if (key.key == "h") { this.hooked = !this.hooked }
-            if (key.key == " ") { this.break = true; key.preventDefault() }
+        const inputDownKeys = document.addEventListener("keydown", event => {
+            let key = event.key.toLowerCase()
+            if (event.ctrlKey && key != "r") { event.preventDefault() }
+            if (key == "w") { this.forward = true }
+            if (key == "s") { this.backward = true }
+            if (key == "d") { this.rightTurn = true }
+            if (key == "a") { this.leftTurn = true }
+            if (key == "h") { this.hooked = !this.hooked }
+            if (key == " ") { this.break = true; event.preventDefault() }
         })
-        const inputUpKeys = document.addEventListener("keyup", key => {
-            if (key.key == "w") { this.forward = false }
-            if (key.key == "s") { this.backward = false }
-            if (key.key == "d") { this.rightTurn = false }
-            if (key.key == "a") { this.leftTurn = false }
-            if (key.key == " ") { this.break = false; key.preventDefault() }
+        const inputUpKeys = document.addEventListener("keyup", event => {
+            let key = event.key.toLowerCase()
+            if (key == "w") { this.forward = false }
+            if (key == "s") { this.backward = false }
+            if (key == "d") { this.rightTurn = false }
+            if (key == "a") { this.leftTurn = false }
+            if (key == " ") { this.break = false; event.preventDefault() }
         })
     }
 
