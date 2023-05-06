@@ -19,6 +19,9 @@ class trailer {
         this.attachPointY = this.centerY - this.length + 150
         this.direction = direction
         this.velocity = 0
+        this.hooked = false
+        this.hookedBy = ""
+        this.canHook = true
 
         this.breakForce = 80
         this.friction = 10
@@ -39,10 +42,6 @@ class trailer {
 
 
     draw() {
-        // DEBUG
-        this.direction = this.trucks[0].direction
-        // DEBUG
-
         this.attachPointX = this.centerX + Math.sin(this.direction) * (this.length - 150)
         this.attachPointY = this.centerY - Math.cos(this.direction) * (this.length - 150)
 
@@ -119,29 +118,19 @@ class trailer {
         this.ctx.fill()
         this.ctx.restore()
 
+        // Can Hook Prompt
+        if (this.canHook == true) {
+            ctx.fillStyle = "rgba(0,0,0,0.5)"
+            ctx.beginPath()
+            ctx.roundRect(this.attachPointX - 70, this.attachPointY - 70, 140, 140, 20)
+            ctx.closePath()
+            ctx.fill()
 
-        // Hook on Trailer Prompt
-        this.trucks.forEach(truck => {
-            let r = 20
-            if (
-                truck.hooked == false &&
-                truck.centerX < this.attachPointX + r &&
-                truck.centerX > this.attachPointX - r &&
-                truck.centerY < this.attachPointY + r &&
-                truck.centerY > this.attachPointY - r
-            ) {
-                ctx.fillStyle = "rgba(0,0,0,0.5)"
-                ctx.beginPath()
-                ctx.roundRect(truck.centerX - 70, truck.centerY - 70, 140, 140, 20)
-                ctx.closePath()
-                ctx.fill()
-
-                this.ctx.fillStyle = "white"
-                this.ctx.textAlign = "center"
-                this.ctx.font = "bold 60px sans-serif"
-                this.ctx.fillText("H", truck.centerX, truck.centerY + 20)
-            }
-        })
+            this.ctx.fillStyle = "white"
+            this.ctx.textAlign = "center"
+            this.ctx.font = "bold 60px sans-serif"
+            this.ctx.fillText("H", this.attachPointX, this.attachPointY + 20)
+        }
     }
 
     move() {
@@ -161,8 +150,8 @@ class trailer {
 
 
         // Apply Friction
-        else if (this.velocity < 0) { this.velocity += this.friction / this.cargoMass }
-        else if (this.velocity > 0) { this.velocity -= this.friction / this.cargoMass }
+        else if (this.velocity < 0) { this.velocity += this.friction / (this.cargoMass + this.dryMass) }
+        else if (this.velocity > 0) { this.velocity -= this.friction / (this.cargoMass + this.dryMass) }
 
 
         // Apply Velocity to Truck Position
@@ -171,8 +160,51 @@ class trailer {
 
 
         // Breaking
-        if (this.break && this.velocity > 0) { this.velocity -= this.breakForce / this.cargoMass }
-        if (this.break && this.velocity < 0) { this.velocity += this.breakForce / this.cargoMass }
+        if (this.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass) }
+        if (this.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass) }
+
+
+        // Hook on Trailer
+        this.trucks.forEach(truck => {
+            let r = 20
+            this.canHook = false
+            if (
+                truck.hooked == false &&
+                this.hooked == false &&
+                truck.centerX < this.attachPointX + r &&
+                truck.centerX > this.attachPointX - r &&
+                truck.centerY < this.attachPointY + r &&
+                truck.centerY > this.attachPointY - r
+            ) {
+                // Prompt To Hook Trailer
+                this.canHook = true
+            }
+            else if (
+                truck.id == this.hookedBy &&
+                truck.hooked == false &&
+                this.hooked == true &&
+                truck.centerX < this.attachPointX + r &&
+                truck.centerX > this.attachPointX - r &&
+                truck.centerY < this.attachPointY + r &&
+                truck.centerY > this.attachPointY - r
+            ) {
+                // Unhooks Trailer
+                this.hooked = false
+            }
+            else if (
+                truck.id != this.hookedBy &&
+                truck.hooked == true &&
+                this.hooked == false &&
+                truck.centerX < this.attachPointX + r &&
+                truck.centerX > this.attachPointX - r &&
+                truck.centerY < this.attachPointY + r &&
+                truck.centerY > this.attachPointY - r
+            ) {
+                // Hooks Trailer
+                this.hooked = true
+                this.hookedBy = truck.id
+            }
+        })
     }
 
     save() {

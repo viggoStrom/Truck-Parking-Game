@@ -3,34 +3,51 @@
 const canvas = document.querySelector("canvas")
 const ctx = canvas.getContext("2d")
 
+
+canvas.height = 1080
+canvas.width = 1920
+
+const whiteTruck = new truck()
+const whiteTrailer = new trailer([whiteTruck])
+
+
+// DEBUG
 const velocityStat = document.getElementById("velocity")
 const accelerationStat = document.getElementById("acceleration")
 const frictionStat = document.getElementById("friction")
 const directionDeltaStat = document.getElementById("directionDelta")
 const directionStat = document.getElementById("direction")
 const fpsStat = document.getElementById("fps")
+const hookedStat = document.getElementById("hooked")
 
-canvas.height = 1080
-canvas.width = 1920
-
-const whiteTruck = new truck()
-const blueTrailer = new trailer([whiteTruck])
-
-// DEBUG
+const velocityTrailerStat = document.getElementById("velocityTrailer")
+const frictionTrailerStat = document.getElementById("frictionTrailer")
+const directionTrailerStat = document.getElementById("directionTrailer")
+const hookedTrailerStat = document.getElementById("hookedTrailer")
 let frameTime = 0
 let fps = 0
 let i = 0
-const DEBUG_frameInfo = (truck) => {
+const DEBUG_frameInfo = (truck, trailer) => {
     fps = Math.floor(1000 / (Date.now() - frameTime))
     frameTime = Date.now()
 
     if (i > 20) {
-        velocityStat.innerText = "Vel: " + truck.velocity.toFixed(1)
-        accelerationStat.innerText = "Acc: " + truck.acceleration.toFixed(1)
-        frictionStat.innerText = "Fri: " + truck.friction.toFixed(1)
-        directionDeltaStat.innerText = "DirΔ: " + (truck.steerForce).toFixed(5)
-        directionStat.innerText = "Dir: " + truck.direction.toFixed(1)
-        fpsStat.innerText = "FPS: " + fps
+        try {
+            velocityStat.innerText = "Vel: " + truck.velocity.toFixed(1)
+            accelerationStat.innerText = "Acc: " + truck.acceleration.toFixed(1)
+            frictionStat.innerText = "Fri: " + truck.friction.toFixed(1)
+            directionDeltaStat.innerText = "DirΔ: " + (truck.steerForce).toFixed(5)
+            directionStat.innerText = "Dir: " + truck.direction.toFixed(1)
+            fpsStat.innerText = "FPS: " + fps
+            hookedStat.innerText = "Hooked: " + truck.hooked
+
+            velocityTrailerStat.innerText = "Vel: " + trailer.velocity.toFixed(1)
+            frictionTrailerStat.innerText = "Fri: " + trailer.friction.toFixed(1)
+            directionTrailerStat.innerText = "Dir: " + trailer.direction.toFixed(1)
+            hookedTrailerStat.innerText = "Hooked: " + trailer.hooked
+        } catch (error) {
+
+        }
 
         i = 0
     }
@@ -40,15 +57,15 @@ const DEBUG_frameInfo = (truck) => {
 
 const frame = () => {
 
-    DEBUG_frameInfo(whiteTruck)
+    DEBUG_frameInfo(whiteTruck, whiteTrailer)
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     whiteTruck.move()
     whiteTruck.draw()
 
-    blueTrailer.move()
-    blueTrailer.draw()
+    whiteTrailer.move()
+    whiteTrailer.draw()
 
     window.requestAnimationFrame(frame)
 }
