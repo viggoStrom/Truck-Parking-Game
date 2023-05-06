@@ -7,6 +7,8 @@ const ctx = canvas.getContext("2d")
 canvas.height = 1080
 canvas.width = 1920
 
+// const whiteTruck = new truck(canvas.width / 2, canvas.height * 1.6 / 4)
+// const whiteTrailer = new trailer([whiteTruck], canvas.width / 2, canvas.height * 3 / 4, 0)
 const whiteTruck = new truck()
 const whiteTrailer = new trailer([whiteTruck])
 

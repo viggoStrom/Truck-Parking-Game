@@ -3,7 +3,7 @@
 canvas = document.querySelector("canvas")
 
 class truck {
-    constructor(x = canvas.width / 2, y = canvas.height * 3 / 4) {
+    constructor(x = canvas.width / 2, y = canvas.height * 3 / 4, direction = 0) {
         this.ctx = canvas.getContext("2d")
 
         this.id = Date.now()
@@ -17,7 +17,7 @@ class truck {
 
         this.centerX = x
         this.centerY = y
-        this.direction = 0
+        this.direction = direction
         this.velocity = 0
 
         this.acceleration = 60
@@ -26,7 +26,7 @@ class truck {
         this.friction = 10
         this.mass = 2000
         this.hooked = false
-        
+
 
         const inputDownKeys = document.addEventListener("keydown", key => {
             if (key.ctrlKey && key.key != "r") { key.preventDefault() }

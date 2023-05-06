@@ -12,6 +12,7 @@ class trailer {
         this.color = color
         this.width = 115
         this.length = 500
+        this.spineLength = this.length - 150
 
         this.centerX = x
         this.centerY = y
@@ -19,6 +20,7 @@ class trailer {
         this.attachPointY = this.centerY - this.length + 150
         this.direction = direction
         this.velocity = 0
+
         this.hooked = false
         this.hookedBy = ""
         this.canHook = true
@@ -42,9 +44,6 @@ class trailer {
 
 
     draw() {
-        this.attachPointX = this.centerX + Math.sin(this.direction) * (this.length - 150)
-        this.attachPointY = this.centerY - Math.cos(this.direction) * (this.length - 150)
-
         let x, y, w, h
 
         // Parking Space
@@ -134,6 +133,10 @@ class trailer {
     }
 
     move() {
+        // Update Attach Points 
+        this.attachPointX = this.centerX + Math.sin(this.direction) * this.spineLength
+        this.attachPointY = this.centerY - Math.cos(this.direction) * this.spineLength
+
         // Wall collision
         if (this.centerX > canvas.width - 45) { this.centerX = canvas.width - 45; this.velocity = -this.velocity * 0.2 }
         if (this.centerX < 0 + 45) { this.centerX = 0 + 45; this.velocity = -this.velocity * 0.2 }
@@ -163,6 +166,14 @@ class trailer {
         if (this.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass) }
         if (this.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass) }
 
+        // Turn to Truck
+        this.trucks.forEach(truck => {
+            if (this.hooked && truck.id == this.hookedBy) {
+                let deltaX = truck.centerX - this.centerX
+                let deltaY = this.centerY - truck.centerY
+                this.direction = Math.atan(deltaX / deltaY)
+            }
+        })
 
         // Hook on Trailer
         this.trucks.forEach(truck => {
@@ -176,7 +187,7 @@ class trailer {
                 truck.centerY < this.attachPointY + r &&
                 truck.centerY > this.attachPointY - r
             ) {
-                // Prompt To Hook Trailer
+                // Prompt to Hook up Trailer
                 this.canHook = true
             }
             else if (
