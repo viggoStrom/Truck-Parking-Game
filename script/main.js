@@ -14,7 +14,7 @@ canvas.height = 1080
 canvas.width = 1920
 
 const whiteTruck = new truck()
-
+const blueTrailer = new trailer([whiteTruck])
 
 // DEBUG
 let frameTime = 0
@@ -47,7 +47,40 @@ const frame = () => {
     whiteTruck.move()
     whiteTruck.draw()
 
+    blueTrailer.move()
+    blueTrailer.draw()
+
     window.requestAnimationFrame(frame)
 }
 
+const welcomePrompt = () => {
+    ctx.fillStyle = "black"
+    ctx.globalAlpha = 0.6
+    ctx.beginPath()
+    ctx.roundRect(canvas.width / 4, canvas.height / 4, canvas.width * 2 / 4, canvas.height * 2 / 4, 90)
+    ctx.closePath()
+    ctx.fill()
+    ctx.globalAlpha = 1
+
+    ctx.textAlign = "center"
+    ctx.fillStyle = "white"
+
+    ctx.font = "bold 70px sans-serif"
+    ctx.fillText("Park Your Trailer!", canvas.width / 2, canvas.height / 2)
+
+    ctx.font = "bold 40px sans-serif"
+    ctx.fillText("Click to Continue", canvas.width / 2, canvas.height / 2 + 60)
+}
+
+const start = (event) => {
+    document.removeEventListener("click", start)
+
+    window.requestAnimationFrame(frame)
+}
+
+// welcomePrompt()
+// document.addEventListener("click", start)
+
+
+// DEBUG
 window.requestAnimationFrame(frame)
