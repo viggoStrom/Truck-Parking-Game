@@ -30,6 +30,23 @@ class trailer {
         this.friction = 10
         this.cargoMass = 0
         this.dryMass = 2000
+
+        const inputDownKeys = document.addEventListener("keydown", event => {
+            let key = event.key.toLowerCase()
+            trucks.forEach(truck => {
+                if (key == " " && truck.id == this.hookedBy) { this.break = true; event.preventDefault() }
+            })
+        })
+        const inputUpKeys = document.addEventListener("keyup", event => {
+            let key = event.key.toLowerCase()
+            trucks.forEach(truck => {
+                if (key == " ") { this.break = false; event.preventDefault() }
+            })
+        })
+
+        // window.onbeforeunload = function (event) {
+        //     this.save()
+        // };
     }
 
     roundRect(x, y, w, h) {
@@ -147,9 +164,21 @@ class trailer {
         if (this.centerY > canvas.height - 45) { this.centerY = canvas.height - 45; this.velocity = -this.velocity * 0.2 }
         if (this.centerY < 0 + 45) { this.centerY = 0 + 45; this.velocity = -this.velocity * 0.2 }
 
+        if (this.attachPointX > canvas.width - 45) { this.velocity = -this.velocity * 0.2 }
+        if (this.attachPointX < 0 + 45) { this.velocity = -this.velocity * 0.2 }
+        if (this.attachPointY > canvas.height - 45) { this.velocity = -this.velocity * 0.2 }
+        if (this.attachPointY < 0 + 45) { this.velocity = -this.velocity * 0.2 }
+
 
         // Update Friction
-        this.friction = 5 + Math.abs(this.velocity) / 2
+        this.trucks.forEach(truck => {
+            if (this.hooked && truck.id == this.hookedBy) {
+                this.friction = truck.friction
+            }
+            else {
+                this.friction = 5 + Math.abs(this.velocity) / 2
+            }
+        })
 
 
         // Near 0 Velocity Sets Velocity To 0
@@ -161,6 +190,11 @@ class trailer {
         else if (this.velocity > 0) { this.velocity -= this.friction / (this.cargoMass + this.dryMass) }
 
 
+        // Apply Velocity to Truck Position
+        this.centerX += this.velocity * Math.sin(this.direction)
+        this.centerY -= this.velocity * Math.cos(this.direction)
+
+
         // Calculate Velocity
         this.trucks.forEach(truck => {
             if (this.hooked && truck.id == this.hookedBy) {
@@ -168,48 +202,32 @@ class trailer {
                 const deltaY = truck.centerY - this.centerY
                 const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2)
                 const deltaAngle = this.direction - truck.direction
+                const deadZone = 0.05
 
-                if (truck.velocity == 0) {
-                    this.velocity = 0
-                }
-                else if (Math.abs(distance - this.spineLength) < .05) {
+                if (Math.abs(distance - this.spineLength) < deadZone) {
                     this.velocity = truck.velocity * Math.cos(deltaAngle)
                 }
-                else if (distance > this.spineLength && (truck.velocity > 0 || truck.velocity < 0)) {
-                    this.velocity += 0.02 + (truck.velocity / 100) * Math.cos(deltaAngle)
+                if (distance > this.spineLength && (truck.velocity > deadZone || truck.velocity < deadZone)) {
+                    // this.velocity += 0.02 + (truck.velocity / 70) * Math.cos(deltaAngle)
+                    this.velocity += 0.07 + (truck.velocity / 70) * Math.cos(deltaAngle)
                 }
-                else if (distance < this.spineLength && (truck.velocity > 0 || truck.velocity < 0)) {
-                    this.velocity -= 0.02 - (truck.velocity / 100) * Math.cos(deltaAngle)
+                if (distance < this.spineLength && (truck.velocity > deadZone || truck.velocity < deadZone)) {
+                    // this.velocity -= 0.04 - (truck.velocity / 70) * Math.cos(deltaAngle)
+                    this.velocity -= 0.07 + (truck.velocity / 70) * Math.cos(deltaAngle)
+                }
+                if (Math.abs(distance - this.spineLength) > 50) {
+                    this.hookOff(truck)
                 }
             }
         })
-
-
-        // Apply Velocity to Truck Position
-        this.centerX += this.velocity * Math.sin(this.direction)
-        this.centerY -= this.velocity * Math.cos(this.direction)
 
 
         // Breaking
         this.trucks.forEach(truck => {
-            if (truck.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass); }
-            // if (truck.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass); }
+            if (truck.id == this.hookedBy && truck.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass); }
+            if (truck.id == this.hookedBy && truck.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass); }
         })
 
-        // Turn to Truck
-        this.trucks.forEach(truck => {
-            if (this.hooked && truck.id == this.hookedBy) {
-                const deltaX = truck.centerX - this.centerX
-                const deltaY = this.centerY - truck.centerY
-                const c = Math.sqrt(deltaX ** 2 + deltaY ** 2)
-
-                if (truck.centerX > this.centerX) {
-                    this.direction = -Math.asin(deltaY / c) + Math.PI / 2
-                } else {
-                    this.direction = Math.asin(deltaY / c) - Math.PI / 2
-                }
-            }
-        })
 
         // Hook on Trailer
         this.trucks.forEach(truck => {
@@ -218,6 +236,8 @@ class trailer {
             if (
                 truck.hooked == false &&
                 this.hooked == false &&
+                // !(this.direction + (Math.PI / 2 - truck.direction) > 3.6 ||
+                //     this.direction + (Math.PI / 2 - truck.direction) < -0.5) &&
                 truck.centerX < this.attachPointX + r &&
                 truck.centerX > this.attachPointX - r &&
                 truck.centerY < this.attachPointY + r &&
@@ -235,9 +255,7 @@ class trailer {
                 truck.centerY < this.attachPointY + r &&
                 truck.centerY > this.attachPointY - r
             ) {
-                // Unhooks Trailer
-                this.hooked = false
-                truck.mass -= (this.cargoMass + this.dryMass)
+                this.hookOff(truck)
             }
             else if (
                 truck.id != this.hookedBy &&
@@ -249,11 +267,47 @@ class trailer {
                 truck.centerY > this.attachPointY - r
             ) {
                 // Hooks Trailer
-                this.hooked = true
-                this.hookedBy = truck.id
-                truck.mass += (this.cargoMass + this.dryMass)
+                this.hookOn(truck)
+            }
+
+            truck.checkIfHooked()
+        })
+
+
+        // Turn to Truck
+        this.trucks.forEach(truck => {
+            if (this.hooked && truck.id == this.hookedBy) {
+                const deltaX = truck.centerX - this.centerX
+                const deltaY = this.centerY - truck.centerY
+                const c = Math.sqrt(deltaX ** 2 + deltaY ** 2)
+
+                if (truck.centerX > this.centerX) {
+                    this.direction = -Math.asin(deltaY / c) + Math.PI / 2
+                } else {
+                    this.direction = Math.asin(deltaY / c) - Math.PI / 2
+                }
+
+                // Unhook if Angle is too Sharp
+                const deltaAngle = this.direction + (Math.PI / 2 - truck.direction)
+                if (deltaAngle > 3.6 || deltaAngle < -0.5) {
+                    this.hookOff(truck)
+                }
             }
         })
+    }
+
+    hookOn(truck) {
+        this.hooked = true
+        this.hookedBy = truck.id
+        truck.mass += (this.cargoMass + this.dryMass)
+        truck.hasTrailer = true
+    }
+
+    hookOff(truck) {
+        this.hooked = false
+        this.hookedBy = ""
+        truck.mass -= (this.cargoMass + this.dryMass)
+        truck.hasTrailer = false
     }
 
     save() {

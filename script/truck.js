@@ -26,6 +26,7 @@ class truck {
         this.friction = 10
         this.mass = 2000
         this.hooked = false
+        this.hasTrailer = false
 
 
         const inputDownKeys = document.addEventListener("keydown", event => {
@@ -46,6 +47,10 @@ class truck {
             if (key == "a") { this.leftTurn = false }
             if (key == " ") { this.break = false; event.preventDefault() }
         })
+
+        // window.onbeforeunload = function (event) {
+        //     this.save()
+        // };
     }
 
     steerForceEq = (x) => {
@@ -113,7 +118,7 @@ class truck {
 
         // Tractor Unit
         x = this.centerX - this.cabWidth / 2 + this.widthDelta
-        y = this.centerY - this.length / 2 - 45 - 20
+        y = this.centerY - this.length / 2 - 65
         w = this.width
         h = this.length
         this.ctx.fillStyle = "#505050"
@@ -122,7 +127,7 @@ class truck {
 
         // Cab
         x = this.centerX - (this.cabWidth / 2)
-        y = this.centerY - this.length / 2 - 45 - 20
+        y = this.centerY - this.length / 2 - 65
         w = this.cabWidth
         h = this.cabLength
         this.ctx.fillStyle = this.color
@@ -138,6 +143,12 @@ class truck {
     }
 
     move() {
+        // Update Front Collider  
+        this.spineLength = this.length - 150
+        this.frontColliderX = this.centerX + Math.sin(this.direction) * this.spineLength
+        this.frontColliderY = this.centerY - Math.cos(this.direction) * this.spineLength
+
+
         // Wall collision
         if (this.centerX > canvas.width - 45) { this.centerX = canvas.width - 45; this.velocity = -this.velocity * 0.2 }
         if (this.centerX < 0 + 45) { this.centerX = 0 + 45; this.velocity = -this.velocity * 0.2 }
@@ -179,6 +190,10 @@ class truck {
         if (this.rightTurn && this.velocity < 0) { this.direction -= this.steerForce }
         if (this.leftTurn && this.velocity > 0) { this.direction -= this.steerForce }
         if (this.leftTurn && this.velocity < 0) { this.direction += this.steerForce }
+    }
+
+    checkIfHooked() {
+        if (!this.hasTrailer) { this.hooked = false }
     }
 
     save() {

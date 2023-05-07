@@ -7,8 +7,8 @@ const ctx = canvas.getContext("2d")
 canvas.height = 1080
 canvas.width = 1920
 
-const whiteTruck = new truck(canvas.width / 2, canvas.height * 1.6 / 4)
-const whiteTrailer = new trailer([whiteTruck], canvas.width / 2, canvas.height * 3 / 4, 0)
+const whiteTruck = new truck(canvas.width / 6, canvas.height * 1.6 / 4)
+const whiteTrailer = new trailer([whiteTruck], canvas.width / 6, canvas.height * 3 / 4, 0)
 
 
 // DEBUG
@@ -20,6 +20,7 @@ const directionStat = document.getElementById("direction")
 const fpsStat = document.getElementById("fps")
 const hookedStat = document.getElementById("hooked")
 const breakingStat = document.getElementById("breaking")
+const hasTrailerStat = document.getElementById("hasTrailer")
 
 const velocityTrailerStat = document.getElementById("velocityTrailer")
 const frictionTrailerStat = document.getElementById("frictionTrailer")
@@ -44,7 +45,8 @@ const DEBUG_frameInfo = (truck, trailer) => {
             fpsStat.innerText = "FPS: " + fps
             hookedStat.innerText = "Hooked: " + truck.hooked
             breakingStat.innerText = "Breaking: " + truck.break
-            
+            hasTrailerStat.innerText = "Has Trailer: " + truck.hasTrailer
+
             velocityTrailerStat.innerText = "Vel: " + trailer.velocity.toFixed(1)
             frictionTrailerStat.innerText = "Fri: " + trailer.friction.toFixed(1)
             directionTrailerStat.innerText = "Dir: " + trailer.direction.toFixed(1)
@@ -100,6 +102,10 @@ const start = (event) => {
 
     window.requestAnimationFrame(frame)
 }
+
+// window.onbeforeunload = function (event) {
+//     return "string"
+// };
 
 // welcomePrompt()
 // document.addEventListener("click", start)
