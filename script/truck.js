@@ -25,6 +25,7 @@ class truck {
         this.steerForce = 0.0002
         this.friction = 10
         this.mass = 2000
+        this.originalMass = 2000
         this.hooked = false
         this.hasTrailer = false
 
@@ -140,20 +141,49 @@ class truck {
         this.ctx.arc(this.centerX, this.centerY, 20, 0, 2 * Math.PI)
         this.ctx.closePath()
         this.ctx.fill()
+
+        // DEBUG Front Collider
+        this.ctx.fillStyle = "orange"
+        this.ctx.beginPath()
+        this.ctx.arc(this.frontColliderX, this.frontColliderY, 20, 0, 2 * Math.PI)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+        // DEBUG Velocity Vector
+        if (this.break) {
+            this.ctx.strokeStyle = "red"
+        } else {
+            this.ctx.strokeStyle = "blue"
+        }
+        this.ctx.lineWidth = 20
+        x = this.centerX
+        y = this.centerY
+        w = this.centerX + Math.sin(this.direction) * this.velocity * 100
+        h = this.centerY - Math.cos(this.direction) * this.velocity * 100
+        this.ctx.beginPath()
+        this.ctx.moveTo(x, y)
+        this.ctx.lineTo(w, h)
+        this.ctx.closePath()
+        this.ctx.stroke()
     }
 
     move() {
         // Update Front Collider  
-        this.spineLength = this.length - 150
+        this.spineLength = this.length - 95
         this.frontColliderX = this.centerX + Math.sin(this.direction) * this.spineLength
         this.frontColliderY = this.centerY - Math.cos(this.direction) * this.spineLength
 
 
         // Wall collision
         if (this.centerX > canvas.width - 45) { this.centerX = canvas.width - 45; this.velocity = -this.velocity * 0.2 }
-        if (this.centerX < 0 + 45) { this.centerX = 0 + 45; this.velocity = -this.velocity * 0.2 }
+        if (this.centerX < 45) { this.centerX = 45; this.velocity = -this.velocity * 0.2 }
         if (this.centerY > canvas.height - 45) { this.centerY = canvas.height - 45; this.velocity = -this.velocity * 0.2 }
-        if (this.centerY < 0 + 45) { this.centerY = 0 + 45; this.velocity = -this.velocity * 0.2 }
+        if (this.centerY < 45) { this.centerY = 45; this.velocity = -this.velocity * 0.2 }
+
+        if (this.frontColliderX > canvas.width - 45) { this.velocity = -this.velocity * 0.2; this.centerX = canvas.width - 45 - this.spineLength * Math.sin(this.direction); }
+        if (this.frontColliderX < 45) { this.velocity = -this.velocity * 0.2; this.centerX = 45 - this.spineLength * Math.sin(this.direction); }
+        if (this.frontColliderY > canvas.height - 45) { this.velocity = -this.velocity * 0.2; this.centerY = canvas.height - 45 + this.spineLength * Math.cos(this.direction); }
+        if (this.frontColliderY < 45) { this.velocity = -this.velocity * 0.2; this.centerY = 45 + this.spineLength * Math.cos(this.direction); }
 
 
         // Update Friction
@@ -190,10 +220,6 @@ class truck {
         if (this.rightTurn && this.velocity < 0) { this.direction -= this.steerForce }
         if (this.leftTurn && this.velocity > 0) { this.direction -= this.steerForce }
         if (this.leftTurn && this.velocity < 0) { this.direction += this.steerForce }
-    }
-
-    checkIfHooked() {
-        if (!this.hasTrailer) { this.hooked = false }
     }
 
     save() {

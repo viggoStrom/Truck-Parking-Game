@@ -3,12 +3,12 @@
 const canvas = document.querySelector("canvas")
 const ctx = canvas.getContext("2d")
 
-
 canvas.height = 1080
 canvas.width = 1920
 
-const whiteTruck = new truck(canvas.width / 6, canvas.height * 1.6 / 4)
-const whiteTrailer = new trailer([whiteTruck], canvas.width / 6, canvas.height * 3 / 4, 0)
+const whiteTruck = new truck(canvas.width * 1.5 / 4, canvas.height * 2 / 4,1)
+const whiteTrailer = new trailer([whiteTruck], canvas.width *0.2 / 2, canvas.height * 3.2 / 4, 1, "white")
+const whiteTrailersSpot = new parkingSpot(whiteTrailer, canvas.width / 2, canvas.height * 2.8 / 4, .0)
 
 
 // DEBUG
@@ -28,6 +28,8 @@ const directionTrailerStat = document.getElementById("directionTrailer")
 const hookedTrailerStat = document.getElementById("hookedTrailer")
 const canHookStat = document.getElementById("canHook")
 const breakingTrailerStat = document.getElementById("breakingTrailer")
+const deltaAngleStat = document.getElementById("deltaAngle")
+const cosStat = document.getElementById("cos")
 let frameTime = 0
 let fps = 0
 let i = 0
@@ -41,7 +43,7 @@ const DEBUG_frameInfo = (truck, trailer) => {
             accelerationStat.innerText = "Acc: " + truck.acceleration.toFixed(1)
             frictionStat.innerText = "Fri: " + truck.friction.toFixed(1)
             directionDeltaStat.innerText = "DirΔ: " + (truck.steerForce).toFixed(5)
-            directionStat.innerText = "Dir: " + truck.direction.toFixed(1)
+            directionStat.innerText = "Dir: " + truck.direction.toFixed(3)
             fpsStat.innerText = "FPS: " + fps
             hookedStat.innerText = "Hooked: " + truck.hooked
             breakingStat.innerText = "Breaking: " + truck.break
@@ -49,10 +51,12 @@ const DEBUG_frameInfo = (truck, trailer) => {
 
             velocityTrailerStat.innerText = "Vel: " + trailer.velocity.toFixed(1)
             frictionTrailerStat.innerText = "Fri: " + trailer.friction.toFixed(1)
-            directionTrailerStat.innerText = "Dir: " + trailer.direction.toFixed(1)
+            directionTrailerStat.innerText = "Dir: " + trailer.direction.toFixed(3)
             hookedTrailerStat.innerText = "Hooked: " + trailer.hooked
             canHookStat.innerText = "Can Hook: " + trailer.canHook
             breakingTrailerStat.innerText = "Breaking: " + trailer.break
+            deltaAngleStat.innerHTML = "Δ°: " + trailer.deltaAngle.toFixed(2)
+            cosStat.innerText = "cos(Δ°): " + Math.cos(trailer.deltaAngle).toFixed(3)
         } catch (error) {
 
         }
@@ -68,6 +72,9 @@ const frame = () => {
     DEBUG_frameInfo(whiteTruck, whiteTrailer)
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    whiteTrailersSpot.math()
+    whiteTrailersSpot.draw()
 
     whiteTruck.move()
     whiteTruck.draw()
