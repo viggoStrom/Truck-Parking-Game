@@ -3,7 +3,7 @@
 canvas = document.querySelector("canvas")
 
 class trailer {
-    constructor(trucks = [], x = canvas.width / 5, y = canvas.height * 3 / 4, direction = 0.5, color = "white") {
+    constructor(trucks = [], x = 1 / 5, y = 3 / 4, direction = 0.5, color = "white") {
         this.ctx = canvas.getContext("2d")
 
         this.id = Date.now()
@@ -14,8 +14,8 @@ class trailer {
         this.length = 500
         this.spineLength = this.length - 150
 
-        this.centerX = x
-        this.centerY = y
+        this.centerX = x * canvas.width
+        this.centerY = y * canvas.height
         this.attachPointX = this.centerX
         this.attachPointY = this.centerY - this.length + 150
         this.direction = direction
@@ -73,7 +73,6 @@ class trailer {
     draw() {
         let x, y, w, h
 
-
         // Wheels
         this.ctx.fillStyle = "black"
         x = this.centerX - this.width / 2 - 6
@@ -108,44 +107,6 @@ class trailer {
         h = this.length
         this.ctx.fillStyle = this.color
         this.roundRect(x, y, w, h)
-
-
-        // DEBUG Center Point
-        this.ctx.fillStyle = "lightGreen"
-        this.ctx.beginPath()
-        this.ctx.arc(this.centerX, this.centerY, 20, 0, 2 * Math.PI)
-        this.ctx.closePath()
-        this.ctx.fill()
-
-
-        // DEBUG Attach Point
-        this.ctx.fillStyle = "orange"
-        x = this.attachPointX - this.centerX
-        y = this.attachPointY - this.centerY
-        this.ctx.save()
-        this.ctx.beginPath()
-        this.ctx.translate(this.centerX, this.centerY)
-        this.ctx.arc(x, y, 20, 0, 2 * Math.PI)
-        this.ctx.closePath()
-        this.ctx.fill()
-        this.ctx.restore()
-
-        // DEBUG Velocity Vector
-        if (this.break) {
-            this.ctx.strokeStyle = "red"
-        } else {
-            this.ctx.strokeStyle = "blue"
-        }
-        this.ctx.lineWidth = 20
-        x = this.centerX
-        y = this.centerY
-        w = this.centerX + Math.sin(this.direction) * this.velocity * 100
-        h = this.centerY - Math.cos(this.direction) * this.velocity * 100
-        this.ctx.beginPath()
-        this.ctx.moveTo(x, y)
-        this.ctx.lineTo(w, h)
-        this.ctx.closePath()
-        this.ctx.stroke()
 
 
         // Can Hook Prompt
@@ -230,10 +191,10 @@ class trailer {
                     this.velocity = truck.velocity * Math.cos(this.deltaAngle)
                 }
                 else if (deltaDistance > deadZone) {
-                    this.velocity += 0.2
+                    this.velocity += 0.2 - 0.1 * Math.cos(this.deltaAngle)
                 }
                 else if (deltaDistance < -deadZone) {
-                    this.velocity -= 0.2
+                    this.velocity -= 0.2 - 0.1 * Math.cos(this.deltaAngle)
                 }
 
             }
@@ -262,7 +223,7 @@ class trailer {
             )
         }
         this.trucks.forEach(truck => {
-            const radius = 20
+            const radius = 10
             this.canHook = false
             this.updateDeltaAngle(truck)
             this.updateDistance(truck)
@@ -301,7 +262,7 @@ class trailer {
 
             // Defaults to Setting the Truck to Unhooked
             else {
-                truck.hooked = false    
+                truck.hooked = false
             }
 
             // If Truck Is: Clicking Hook Off, Their Angle Is Too Sharp, or The Distance Between Them Is Too Great, Detach the Trailer
@@ -363,5 +324,46 @@ class trailer {
 
     load() {
         return JSON.parse(window.localStorage.getItem(this.id))
+    }
+
+    debug() {
+        let x, y, w, h
+
+        // DEBUG Center Point
+        this.ctx.fillStyle = "lightGreen"
+        this.ctx.beginPath()
+        this.ctx.arc(this.centerX, this.centerY, 20, 0, 2 * Math.PI)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+
+        // DEBUG Attach Point
+        this.ctx.fillStyle = "orange"
+        x = this.attachPointX - this.centerX
+        y = this.attachPointY - this.centerY
+        this.ctx.save()
+        this.ctx.beginPath()
+        this.ctx.translate(this.centerX, this.centerY)
+        this.ctx.arc(x, y, 20, 0, 2 * Math.PI)
+        this.ctx.closePath()
+        this.ctx.fill()
+        this.ctx.restore()
+
+        // DEBUG Velocity Vector
+        if (this.break) {
+            this.ctx.strokeStyle = "red"
+        } else {
+            this.ctx.strokeStyle = "blue"
+        }
+        this.ctx.lineWidth = 20
+        x = this.centerX
+        y = this.centerY
+        w = this.centerX + Math.sin(this.direction) * this.velocity * 100
+        h = this.centerY - Math.cos(this.direction) * this.velocity * 100
+        this.ctx.beginPath()
+        this.ctx.moveTo(x, y)
+        this.ctx.lineTo(w, h)
+        this.ctx.closePath()
+        this.ctx.stroke()
     }
 }

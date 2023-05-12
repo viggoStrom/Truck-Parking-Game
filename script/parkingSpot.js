@@ -4,18 +4,20 @@ canvas = document.querySelector("canvas")
 
 
 class parkingSpot {
-    constructor(trailer, x, y, direction) {
+    constructor(exits, trailer, x = 1 / 2, y = 1 / 2, direction) {
         this.ctx = canvas.getContext("2d")
 
         this.trailer = trailer
+        this.exits = exits
+
         this.spineLength = this.trailer.spineLength + 120
         this.halfSpineLength = this.spineLength / 2
         this.color = this.trailer.color
 
         this.direction = direction
 
-        this.centerX = x
-        this.centerY = y
+        this.centerX = x * canvas.width
+        this.centerY = y * canvas.height
 
         this.hasTrailer = false
     }
@@ -35,8 +37,8 @@ class parkingSpot {
 
         if (
             // X Component of Check
-            ((tcx > sx-15 && tcx < nx+15) || (tcx < sx+15 && tcx > nx-15)) &&
-            ((tax > sx-15 && tax < nx+15) || (tax < sx+15 && tax > nx-15)) &&
+            ((tcx > sx - 15 && tcx < nx + 15) || (tcx < sx + 15 && tcx > nx - 15)) &&
+            ((tax > sx - 15 && tax < nx + 15) || (tax < sx + 15 && tax > nx - 15)) &&
             // Y Component of Check
             ((tcy > sy && tcy < ny) || (tcy < sy && tcy > ny)) &&
             ((tay > sy && tay < ny) || (tay < sy && tay > ny)) &&
@@ -45,15 +47,24 @@ class parkingSpot {
         ) {
             this.trailer.isParked = true
             this.ctx.strokeStyle = "lightGreen"
+
+            this.exits.forEach(exit => {
+                exit.levelFinished = true
+            })
         } else {
             this.ctx.strokeStyle = this.color
             this.trailer.isParked = false
+
+            this.exits.forEach(exit => {
+                exit.levelFinished = false
+            })
         }
 
     }
 
     draw() {
         let x, y, w, h
+
 
         // Parking Space
         this.ctx.lineWidth = 30
@@ -62,7 +73,6 @@ class parkingSpot {
         h = this.trailer.length * 1.01 + Math.sin(Date.now() / 700) * 5
         x = w / -2
         y = h / -2
-
         this.ctx.save()
         this.ctx.beginPath()
         this.ctx.translate(this.centerX, this.centerY)
@@ -72,7 +82,9 @@ class parkingSpot {
         this.ctx.stroke()
         this.ctx.restore()
         this.ctx.globalAlpha = 1
+    }
 
+    debug() {
         // DEBUG Parking Center
         this.ctx.fillStyle = "lightGreen"
         this.ctx.beginPath()

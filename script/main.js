@@ -6,10 +6,6 @@ const ctx = canvas.getContext("2d")
 canvas.height = 1080
 canvas.width = 1920
 
-const whiteTruck = new truck(canvas.width * 1.5 / 4, canvas.height * 2 / 4,1)
-const whiteTrailer = new trailer([whiteTruck], canvas.width *0.2 / 2, canvas.height * 3.2 / 4, 1, "white")
-const whiteTrailersSpot = new parkingSpot(whiteTrailer, canvas.width / 2, canvas.height * 2.8 / 4, .0)
-
 
 // DEBUG
 const velocityStat = document.getElementById("velocity")
@@ -67,21 +63,30 @@ const DEBUG_frameInfo = (truck, trailer) => {
 }
 // DEBUG
 
+const debug = false
+
+let level = new levelOne()
+
 const frame = () => {
-
-    DEBUG_frameInfo(whiteTruck, whiteTrailer)
-
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    whiteTrailersSpot.math()
-    whiteTrailersSpot.draw()
+    
+    level.draw()
 
-    whiteTruck.move()
-    whiteTruck.draw()
 
-    whiteTrailer.move()
-    whiteTrailer.draw()
-
+    if (debug) {
+        document.querySelectorAll("#stats p").forEach(stat => {
+            stat.style.display = "block"
+        })
+        DEBUG_frameInfo(whiteTruck, whiteTrailer)
+        whiteTrailersSpot.debug()
+        whiteTrailer.debug()
+        whiteTruck.debug()
+    } else {
+        document.querySelectorAll("#stats p").forEach(stat => {
+            stat.style.display = "none"
+        })
+    }
     window.requestAnimationFrame(frame)
 }
 

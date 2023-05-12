@@ -3,7 +3,7 @@
 canvas = document.querySelector("canvas")
 
 class truck {
-    constructor(x = canvas.width / 2, y = canvas.height * 3 / 4, direction = 0) {
+    constructor(x = 1 / 2, y = 3 / 4, direction = 0) {
         this.ctx = canvas.getContext("2d")
 
         this.id = Date.now()
@@ -15,8 +15,8 @@ class truck {
         this.length = 220
         this.widthDelta = (this.cabWidth - this.width) / 2
 
-        this.centerX = x
-        this.centerY = y
+        this.centerX = x * canvas.width
+        this.centerY = y * canvas.height
         this.direction = direction
         this.velocity = 0
 
@@ -33,19 +33,19 @@ class truck {
         const inputDownKeys = document.addEventListener("keydown", event => {
             let key = event.key.toLowerCase()
             if (event.ctrlKey && key != "r") { event.preventDefault() }
-            if (key == "w") { this.forward = true }
-            if (key == "s") { this.backward = true }
-            if (key == "d") { this.rightTurn = true }
-            if (key == "a") { this.leftTurn = true }
+            if (key == "w" || key == "arrowup") { this.forward = true; event.preventDefault() }
+            if (key == "s" || key == "arrowdown") { this.backward = true; event.preventDefault() }
+            if (key == "d" || key == "arrowright") { this.rightTurn = true }
+            if (key == "a" || key == "arrowleft") { this.leftTurn = true }
             if (key == "h") { this.hooked = !this.hooked }
             if (key == " ") { this.break = true; event.preventDefault() }
         })
         const inputUpKeys = document.addEventListener("keyup", event => {
             let key = event.key.toLowerCase()
-            if (key == "w") { this.forward = false }
-            if (key == "s") { this.backward = false }
-            if (key == "d") { this.rightTurn = false }
-            if (key == "a") { this.leftTurn = false }
+            if (key == "w" || key == "arrowup") { this.forward = false; event.preventDefault() }
+            if (key == "s" || key == "arrowdown") { this.backward = false; event.preventDefault() }
+            if (key == "d" || key == "arrowright") { this.rightTurn = false }
+            if (key == "a" || key == "arrowleft") { this.leftTurn = false }
             if (key == " ") { this.break = false; event.preventDefault() }
         })
 
@@ -113,7 +113,7 @@ class truck {
         y = this.centerY + 30 - 20
         this.roundRect(x, y, w, h)
         x = this.centerX + this.cabWidth / 2 - 14
-        y = this.centerY + 30 - 20
+        y = this.centerY + 10
         this.roundRect(x, y, w, h)
 
 
@@ -125,9 +125,41 @@ class truck {
         this.ctx.fillStyle = "#505050"
         this.roundRect(x, y, w, h)
 
+        // Attach Point
+        w = 35
+        h = 50
+        x = this.centerX
+        y = this.centerY
+        this.ctx.fillStyle = "gray"
+        this.ctx.save()
+        this.ctx.beginPath()
+        this.ctx.translate(this.centerX, this.centerY)
+        this.ctx.rotate(this.direction)
+
+        this.ctx.moveTo(x - w / 2 + 5 - this.centerX, y + h / 2 - this.centerY)
+        this.ctx.lineTo(x + w / 2 - 5 - this.centerX, y + h / 2 - this.centerY)
+        this.ctx.lineTo(x + w / 2 - this.centerX, y - this.centerY)
+        this.ctx.lineTo(x - w / 2 - this.centerX, y - this.centerY)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+        this.ctx.beginPath()
+        this.ctx.arc(x - this.centerX, y - this.centerY + 1, w / 2, Math.PI, 0)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+        this.ctx.fillStyle = "black"
+        this.ctx.fillRect(x - w / 6 - this.centerX, y - h / 25 - this.centerY, w / 3, h * 0.545)
+        this.ctx.beginPath()
+        this.ctx.arc(x - this.centerX, y - this.centerY, w / 6, 0, Math.PI * 2)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+        this.ctx.restore()
+
 
         // Cab
-        x = this.centerX - (this.cabWidth / 2)
+        x = this.centerX - this.cabWidth / 2
         y = this.centerY - this.length / 2 - 65
         w = this.cabWidth
         h = this.cabLength
@@ -135,36 +167,13 @@ class truck {
         this.roundRect(x, y, w, h)
 
 
-        // DEBUG Center Point
-        this.ctx.fillStyle = "lightGreen"
-        this.ctx.beginPath()
-        this.ctx.arc(this.centerX, this.centerY, 20, 0, 2 * Math.PI)
-        this.ctx.closePath()
-        this.ctx.fill()
-
-        // DEBUG Front Collider
-        this.ctx.fillStyle = "orange"
-        this.ctx.beginPath()
-        this.ctx.arc(this.frontColliderX, this.frontColliderY, 20, 0, 2 * Math.PI)
-        this.ctx.closePath()
-        this.ctx.fill()
-
-        // DEBUG Velocity Vector
-        if (this.break) {
-            this.ctx.strokeStyle = "red"
-        } else {
-            this.ctx.strokeStyle = "blue"
-        }
-        this.ctx.lineWidth = 20
-        x = this.centerX
-        y = this.centerY
-        w = this.centerX + Math.sin(this.direction) * this.velocity * 100
-        h = this.centerY - Math.cos(this.direction) * this.velocity * 100
-        this.ctx.beginPath()
-        this.ctx.moveTo(x, y)
-        this.ctx.lineTo(w, h)
-        this.ctx.closePath()
-        this.ctx.stroke()
+        // Windshield
+        w = this.width * .95
+        h = 15
+        x = this.centerX - w / 2
+        y = this.centerY - this.length * .8
+        this.ctx.fillStyle = "#212121"
+        this.roundRect(x, y, w, h)
     }
 
     move() {
@@ -236,5 +245,40 @@ class truck {
 
     load() {
         return JSON.parse(window.localStorage.getItem(this.id))
+    }
+
+    debug() {
+        let x, y, w, h
+
+        // DEBUG Center Point
+        this.ctx.fillStyle = "lightGreen"
+        this.ctx.beginPath()
+        this.ctx.arc(this.centerX, this.centerY, 20, 0, 2 * Math.PI)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+        // DEBUG Front Collider
+        this.ctx.fillStyle = "orange"
+        this.ctx.beginPath()
+        this.ctx.arc(this.frontColliderX, this.frontColliderY, 20, 0, 2 * Math.PI)
+        this.ctx.closePath()
+        this.ctx.fill()
+
+        // DEBUG Velocity Vector
+        if (this.break) {
+            this.ctx.strokeStyle = "red"
+        } else {
+            this.ctx.strokeStyle = "blue"
+        }
+        this.ctx.lineWidth = 20
+        x = this.centerX
+        y = this.centerY
+        w = this.centerX + Math.sin(this.direction) * this.velocity * 100
+        h = this.centerY - Math.cos(this.direction) * this.velocity * 100
+        this.ctx.beginPath()
+        this.ctx.moveTo(x, y)
+        this.ctx.lineTo(w, h)
+        this.ctx.closePath()
+        this.ctx.stroke()
     }
 }
