@@ -4,7 +4,7 @@ canvas = document.querySelector("canvas")
 
 
 class exit {
-    constructor(level, trucks, x = 1, y = 1 / 2, direction = Math.PI) {
+    constructor(nextLevel, trucks, x = 1, y = 1 / 2, direction = Math.PI) {
         this.ctx = canvas.getContext("2d")
 
         this.trucks = trucks
@@ -18,7 +18,7 @@ class exit {
         this.levelFinished = false
         this.nextLevel = false
 
-        this.level = level
+        this.level = nextLevel
     }
 
     draw() {
@@ -76,7 +76,18 @@ class exit {
             ) {
                 truck.centerX -= Math.cos(this.direction)
                 truck.centerY -= Math.sin(this.direction)
+
+                this.nextLevel = true
             }
         })
+    }
+
+    nextLevelCheck() {
+        if (this.nextLevel) {
+            return this.level
+        }
+        else {
+            return null
+        }
     }
 }
