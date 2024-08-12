@@ -14,24 +14,30 @@ body {
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
+
+    height: 100vh;
 }
 
-canvas {
-    margin-top: 2rem;
-    width: 90vw;
+#main {
+    margin-top: 1.5rem;
+    max-width: 92vw;
     aspect-ratio: 16/9;
     background-color: gray;
 }
 
-#stats {
+#dashboard {
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-evenly;
-
-    width: 90%;
+    height: 20vh;
+    width: 92vw;
 }
 
-a {
-    text-decoration: none;
-    color: inherit;
+#dashboard canvas {
+    height: 20vh;
+    aspect-ratio: 1/1;
+}
+
+#instructions {
+    height: 20vh;
+    text-align: center;
 }

@@ -1,25 +1,34 @@
 /** @type {HTMLCanvasElement} */
 
-const canvas = document.querySelector("canvas")
+const canvas = document.getElementById("main")
 const ctx = canvas.getContext("2d")
 
 canvas.height = 1080
 canvas.width = 1920
 
+const dashboard = new Dashboard()
 
-let level = new finish()
-// let level = new levelOne()
+// let level = new finish()
+let level = new levelOne()
 
-const frame = () => {
+const update = () => {
+    level.update()
+
+    dashboard.update()
+
+    window.requestAnimationFrame(update)
+}
+
+const render = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+    level.render()
+    // if (!(level instanceof finish) && level.exit.nextLevelCheck() != null) {
+    //     level = level.exit.nextLevelCheck()
+    // }
+    dashboard.render()
 
-    level.draw()
-    if (!(level instanceof finish) && level.exit.nextLevelCheck() != null) {
-        level = level.exit.nextLevelCheck()
-    }
-
-    window.requestAnimationFrame(frame)
+    window.requestAnimationFrame(render)
 }
 
 const welcomePrompt = () => {
@@ -45,16 +54,18 @@ const start = (event) => {
     document.removeEventListener("click", start)
     document.removeEventListener("keydown", start)
 
-    window.requestAnimationFrame(frame)
+    window.requestAnimationFrame(update)
+    window.requestAnimationFrame(render)
 }
 
 // window.onbeforeunload = function (event) {
 //     return "string"
 // };
 
-welcomePrompt()
-document.addEventListener("click", start)
-document.addEventListener("keydown", start)
+// welcomePrompt()
+// document.addEventListener("click", start)
+// document.addEventListener("keydown", start)
+start()
 
 
 // // DEBUG

@@ -1,22 +1,29 @@
 class levelOne {
     constructor() {
-        this.whiteTruck = new truck(1 / 2, 1 / 4)
-        this.whiteTrailer = new trailer([this.whiteTruck], 1 / 2, 3 / 4, 0, "white")
-        this.exit = new exit(new levelTwo, [this.whiteTruck], 1 / 2, 0, Math.PI / 2)
-        this.whiteTrailersSpot = new parkingSpot([this.exit], this.whiteTrailer, 1 / 2, 2.8 / 4, 0)
+        this.truck = new Truck(1 / 2, 1 / 4)
+        // this.trailer = new trailer([this.truck], 1 / 2, 3 / 4, 0, "white")
+        // this.exit = new exit(new levelTwo, [this.truck], 1 / 2, 0, Math.PI / 2)
+        // this.parkingArea = new parkingSpot([this.exit], this.trailer, 1 / 2, 2.8 / 4, 0)
+
+        this.exit = null
+
+        this.content = [
+            this.truck,
+            // this.trailer,
+            // this.exit,
+            // this.parkingArea
+        ]
     }
 
-    draw() {
-        this.whiteTrailersSpot.math()
-        this.whiteTrailersSpot.draw()
+    update() {
+        this.content.forEach((element) => {
+            element.update()
+        })
+    }
 
-        this.whiteTruck.move()
-        this.whiteTruck.draw()
-
-        this.whiteTrailer.move()
-        this.whiteTrailer.draw()
-
-        this.exit.draw()
-        this.exit.check()
+    render() {
+        this.content.forEach((element) => {
+            element.render()
+        })
     }
 }

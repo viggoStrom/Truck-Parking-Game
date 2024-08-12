@@ -1,35 +1,47 @@
 /** @type {HTMLCanvasElement} */
 
-canvas = document.querySelector("canvas")
-
-class truck {
+class Truck {
     constructor(x = 1 / 2, y = 3 / 4, direction = 0) {
         this.ctx = canvas.getContext("2d")
 
-        this.id = Date.now()
+        this.id = Date.now() + Math.random()
+
+        this.direction = direction
+        this.steerAngle = 0
 
         this.color = "white"
         this.cabWidth = 100
         this.cabLength = 85
         this.width = 95
         this.length = 220
-        this.widthDelta = (this.cabWidth - this.width) / 2
+        this.widthOffset = (this.cabWidth - this.width) / 2
 
         this.centerX = x * canvas.width
         this.centerY = y * canvas.height
-        this.direction = direction
-        this.velocity = 0
 
+        this.velocity = 0
         this.acceleration = 60
         this.breakForce = 80
         this.steerForce = 0.0002
         this.friction = 10
         this.mass = 2000
         this.originalMass = 2000
+
         this.hooked = false
         this.hasTrailer = false
 
 
+        this.initInput()
+
+        // window.onbeforeunload = function (event) {
+        //     this.save()
+        // };
+    }
+
+    renderDashboard() {
+    }
+
+    initInput() {
         const inputDownKeys = document.addEventListener("keydown", event => {
             let key = event.key.toLowerCase()
             if (event.ctrlKey && key != "r") { event.preventDefault() }
@@ -48,13 +60,9 @@ class truck {
             if (key == "a" || key == "arrowleft") { this.leftTurn = false }
             if (key == " ") { this.break = false; event.preventDefault() }
         })
-
-        // window.onbeforeunload = function (event) {
-        //     this.save()
-        // };
     }
 
-    steerForceEq = (x) => {
+    steerForceEq(x) {
         x = Math.abs(x)
         if (x < 35) {
             return 0.00765927 * x ** 1 - 0.0025005 * x ** 2 + 0.00037747 * x ** 3 - 0.0000321652 * x ** 4 + 0.00000167361 * x ** 5 - 5.4962 * 10 ** -8 * x ** 6 + 1.1467 * 10 ** -9 * x ** 7 - 1.4986 * 10 ** -11 * x ** 8 + 1.1869 * 10 ** -13 * x ** 9 - 5.402 * 10 ** -16 * x ** 10 + 1.2831 * 10 ** -18 * x ** 11 - 1.2244 * 10 ** -21 * x ** 12
@@ -90,7 +98,12 @@ class truck {
         this.ctx.restore()
     }
 
-    draw() {
+
+    update() {
+
+    }
+
+    render() {
         let x, y, w, h
 
         // Wheels
@@ -118,7 +131,7 @@ class truck {
 
 
         // Tractor Unit
-        x = this.centerX - this.cabWidth / 2 + this.widthDelta
+        x = this.centerX - this.cabWidth / 2 + this.widthOffset
         y = this.centerY - this.length / 2 - 65
         w = this.width
         h = this.length

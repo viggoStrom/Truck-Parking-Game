@@ -1,8 +1,6 @@
 /** @type {HTMLCanvasElement} */
 
-canvas = document.querySelector("canvas")
-
-class trailer {
+class Trailer {
     constructor(trucks = [], x = 1 / 5, y = 3 / 4, direction = 0.5, color = "white") {
         this.ctx = canvas.getContext("2d")
 
@@ -70,7 +68,7 @@ class trailer {
         this.ctx.restore()
     }
 
-    draw() {
+    render() {
         let x, y, w, h
 
         // Wheels

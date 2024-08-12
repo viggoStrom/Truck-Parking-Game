@@ -1,8 +1,5 @@
 /** @type {HTMLCanvasElement} */
 
-canvas = document.querySelector("canvas")
-
-
 class exit {
     constructor(nextLevel, trucks, x = 1, y = 1 / 2, direction = Math.PI) {
         this.ctx = canvas.getContext("2d")
@@ -21,7 +18,7 @@ class exit {
         this.level = nextLevel
     }
 
-    draw() {
+    render() {
         let x, y, w, h
 
 

@@ -1,8 +1,5 @@
 /** @type {HTMLCanvasElement} */
 
-canvas = document.querySelector("canvas")
-
-
 class parkingSpot {
     constructor(exits, trailer, x = 1 / 2, y = 1 / 2, direction) {
         this.ctx = canvas.getContext("2d")
@@ -22,7 +19,7 @@ class parkingSpot {
         this.hasTrailer = false
     }
 
-    math() {
+    update() {
         this.northX = this.centerX + Math.sin(this.direction) * this.halfSpineLength
         this.northY = this.centerY - Math.cos(this.direction) * this.halfSpineLength
 
@@ -62,7 +59,7 @@ class parkingSpot {
 
     }
 
-    draw() {
+    render() {
         let x, y, w, h
 
 

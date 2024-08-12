@@ -1,14 +1,11 @@
 /** @type {HTMLCanvasElement} */
 
-canvas = document.querySelector("canvas")
-
-
 class finish {
     constructor() {
         this.ctx = canvas.getContext("2d")
 
-        this.whiteTruck = new truck(1 / 2, 1 / 4)
-        this.whiteTrailer = new trailer([this.whiteTruck], 1 / 2.5, 4 / 6, Math.PI / 2, "white")
+        this.whiteTruck = new Truck(1 / 2, 1 / 4)
+        this.whiteTrailer = new Trailer([this.whiteTruck], 1 / 2.5, 4 / 6, Math.PI / 2, "white")
         this.whiteTrailersSpot = new parkingSpot([this.exit], this.whiteTrailer, 1 / 2, 2.8 / 4, 0)
     }
 
