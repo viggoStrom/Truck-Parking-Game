@@ -1,17 +1,16 @@
-/** @type {HTMLCanvasElement} */
-
 class Trailer {
-    constructor(trucks = [], x = 1 / 5, y = 3 / 4, direction = 0.5, color = "white") {
-        this.id = Date.now();
-        this.trucks = trucks;
+    constructor(level, fractionPosX, fractionPosY, direction = 0, color = "white") {
+        this.id = Math.floor(Date.now() * Math.random());
+
+        this.level = level;
 
         this.color = color;
         this.width = 115;
         this.length = 500;
         this.spineLength = this.length - 150;
 
-        this.centerX = x * canvas.width;
-        this.centerY = y * canvas.height;
+        this.centerX = fractionPosX * canvas.width;
+        this.centerY = fractionPosY * canvas.height;
         this.attachPointX = this.centerX;
         this.attachPointY = this.centerY - this.length + 150;
         this.direction = direction;
@@ -27,23 +26,6 @@ class Trailer {
         this.friction = 10;
         this.cargoMass = 0;
         this.dryMass = 2000;
-
-        const inputDownKeys = document.addEventListener("keydown", event => {
-            let key = event.key.toLowerCase();
-            trucks.forEach(truck => {
-                if (key == " " && truck.id == this.hookedBy) { this.break = true; event.preventDefault(); }
-            });
-        });
-        const inputUpKeys = document.addEventListener("keyup", event => {
-            let key = event.key.toLowerCase();
-            trucks.forEach(truck => {
-                if (key == " ") { this.break = false; event.preventDefault(); }
-            });
-        });
-
-        // window.onbeforeunload = function (event) {
-        //     this.save()
-        // };
     }
 
     updateDeltaAngle(truck) {

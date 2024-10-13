@@ -1,15 +1,13 @@
-/** @type {HTMLCanvasElement} */
-
 class UI {
     constructor() {
 
     }
 
-    welcome = () => {
+    welcome() {
         ctx.fillStyle = "black";
         ctx.globalAlpha = 0.6;
         ctx.beginPath();
-        ctx.roundRect(canvas.width / 4, canvas.height / 4, canvas.width * 2 / 4, canvas.height * 2 / 4, 90);
+        ctx.roundRect(canvas.width / 8, canvas.height / 4, canvas.width * 6 / 8, canvas.height * 4 / 8, 90);
         ctx.closePath();
         ctx.fill();
         ctx.globalAlpha = 1;

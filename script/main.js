@@ -1,10 +1,12 @@
 /** @type {HTMLCanvasElement} */
-
 const canvas = document.getElementById("main-canvas");
+/** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext("2d");
 
 canvas.height = 1080;
 canvas.width = 1080;
+
+const ui = new UI();
 
 let level = new Level1();
 
@@ -25,11 +27,14 @@ const render = () => {
 }
 
 const start = (event) => {
-    document.removeEventListener("click", start);
-    document.removeEventListener("keydown", start);
+    ui.welcome();
 
-    window.requestAnimationFrame(update);
-    window.requestAnimationFrame(render);
+    document.addEventListener("click", () => {
+        window.requestAnimationFrame(update);
+        window.requestAnimationFrame(render);
+    }, { once: true });
 }
 
-start();
+// start();
+window.requestAnimationFrame(update);
+window.requestAnimationFrame(render);

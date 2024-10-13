@@ -1,5 +1,3 @@
-/** @type {HTMLCanvasElement} */
-
 class exit {
     constructor(nextLevel, trucks, x = 1, y = 1 / 2, direction = Math.PI) {
         this.trucks = trucks;

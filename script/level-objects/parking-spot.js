@@ -1,5 +1,3 @@
-/** @type {HTMLCanvasElement} */
-
 class parkingSpot {
     constructor(exits, trailer, x = 1 / 2, y = 1 / 2, direction) {
         this.trailer = trailer;
