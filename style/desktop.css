@@ -15,26 +15,13 @@ body {
     flex-flow: column nowrap;
     align-items: center;
 
-    height: 100vh;
 }
 
-#main {
+#main-canvas {
     margin-top: 1.5rem;
-    max-width: 92vw;
-    aspect-ratio: 16/9;
-    background-color: gray;
-}
-
-#dashboard {
-    display: flex;
-    flex-flow: row nowrap;
-    height: 20vh;
-    width: 92vw;
-}
-
-#dashboard canvas {
-    height: 20vh;
+    max-height: 90vh;
     aspect-ratio: 1/1;
+    background-color: gray;
 }
 
 #instructions {

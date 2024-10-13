@@ -1,4 +1,4 @@
-class levelOne {
+class Level1 {
     constructor() {
         this.truck = new Truck(1 / 2, 1 / 4)
         // this.trailer = new trailer([this.truck], 1 / 2, 3 / 4, 0, "white")

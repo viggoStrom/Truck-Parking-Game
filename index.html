@@ -5,45 +5,37 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Truck Game</title>
 
     <link rel="shortcut icon" href="assets/images/truckGameLogo.png" type="image/x-icon">
     <link rel="stylesheet" href="style/desktop.css">
+
+    <!-- Classes -->
+    <script defer src="script/level-objects/parking-spot.js"></script>
+    <script defer src="script/level-objects/exit-door.js"></script>
+    <script defer src="script/level-objects/trailer.js"></script>
+    <script defer src="script/level-objects/truck.js"></script>
+
+    <!-- Levels -->
+    <script defer src="script/levels/level-1.js"></script>
+
+    <!-- Run Main -->
+    <script defer src="script/main.js"></script>
 </head>
 
 <body>
-    <canvas id="main"></canvas>
+    <canvas id="main-canvas"></canvas>
 
-    <section id="dashboard">
-        <canvas id="turnAngle"></canvas>
-        <canvas id="speed"></canvas>
-        <canvas id="trailer"></canvas>
-        <canvas id="gear"></canvas>
-
-        <div id="instructions">
-            <h3>Instructions</h3>
-            <p>
-                W & S for Drive <br>
-                A & D for Steering <br>
-                Space for Breaking <br>
-                H for Hooking on Trailer
-            </p>
-        </div>
-    </section>
-
-    <script src="script/exit.js"></script>
-    <script src="script/parkingSpot.js"></script>
-    <script src="script/trailer.js"></script>
-    <script src="script/truck.js"></script>
-
-    <!-- Levels -->
-    <script src="script/levels/one.js"></script>
-    <script src="script/levels/two.js"></script>
-
-
-    <script src="script/finish.js"></script>
-    <script src="script/dashboard.js"></script>
-    <script src="script/main.js"></script>
+    <div id="instructions">
+        <h3>Instructions</h3>
+        <p>
+            W & S for Drive <br>
+            A & D for Steering <br>
+            Space for Breaking <br>
+            H for Hooking on Trailer
+        </p>
+    </div>
 </body>
 
 </html>
