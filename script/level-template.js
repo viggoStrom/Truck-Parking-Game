@@ -10,9 +10,13 @@ class LevelTemplate {
         });
     }
 
-    render() {
+    render(debug = false) {
         this.gameElements.forEach((element) => {
             element.render();
+
+            if (debug) {
+                element.debug();
+            }
         });
     }
 }
