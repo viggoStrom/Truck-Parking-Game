@@ -10,8 +10,8 @@ class Truck {
         this.direction = direction;
         this.steer = {
             angle: 0,
-            force: 0.0002,
-            maxAngle: Math.PI / 2.5,
+            speed: 0.02,
+            maxAngle: Math.PI / 2.8,
         };
 
         this.velocity = 0;
@@ -74,28 +74,44 @@ class Truck {
     }
 
     roundRect(x, y, w, h) {
+        // Save the state of the canvas
         ctx.save();
-        ctx.beginPath();
+        // Offset the canvas to the center of the truck, rotate it, and then offset it back
         ctx.translate(this.center.x, this.center.y);
         ctx.rotate(this.direction);
-        ctx.roundRect(x - this.center.x, y - this.center.y, w, h, 5);
-        ctx.closePath();
+        ctx.translate(-this.center.x, -this.center.y);
+
+        // Draw
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 5);
         ctx.fill();
+
+        // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
     }
 
-    renderWheel(x, y, w, h) {
+    renderWheel(x, y, w, h, angle = 0) {
+        x += w / 2;
+        y += h / 2;
+
+        // Save the state of the canvas
         ctx.save();
-        ctx.beginPath();
+        // Offset the canvas to the center of the truck, rotate it, and then offset it back
         ctx.translate(this.center.x, this.center.y);
         ctx.rotate(this.direction);
-        ctx.restore();
-        ctx.save();
+        ctx.translate(-this.center.x, -this.center.y);
+
+        // Rotate again
         ctx.translate(x, y);
-        ctx.rotate(this.direction * 1.3);
-        ctx.roundRect(this.center.x - x - 58, this.center.y - y - 150, w, h, 5);
-        ctx.closePath();
+        ctx.rotate(angle);
+        ctx.translate(-x, -y);
+
+        // Draw
+        ctx.beginPath();
+        ctx.roundRect(x - w / 2, y - h / 2, w, h, 5);
         ctx.fill();
+
+        // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
     }
 
@@ -106,16 +122,19 @@ class Truck {
     render() {
         // Wheels
         const wheels = () => {
-            let x = this.center.x - this.cab.width / 2 - 8;
-            let y = this.center.y - 130 - 20;
-            let w = 20;
-            let h = 30;
-
+            let x, y;
+            const w = 20;
+            const h = 30;
             ctx.fillStyle = "black";
-            this.roundRect(x, y, w, h);
+
+            x = this.center.x - this.cab.width / 2 - 8;
+            y = this.center.y - 130 - 20;
+            this.renderWheel(x, y, w, h, this.steer.angle);
+            // this.roundRect(x, y, w, h);
             x = this.center.x + this.cab.width / 2 - 12;
             y = this.center.y - 130 - 20;
-            this.roundRect(x, y, w, h);
+            this.renderWheel(x, y, w, h, this.steer.angle);
+            // this.roundRect(x, y, w, h);
             x = this.center.x - this.cab.width / 2 - 6;
             y = this.center.y - 10 - 20;
             this.roundRect(x, y, w, h);
@@ -128,6 +147,10 @@ class Truck {
             x = this.center.x + this.cab.width / 2 - 14;
             y = this.center.y + 10;
             this.roundRect(x, y, w, h);
+
+
+            // x = this.center.x - 100;
+            // y = this.center.y - 150;
         }
 
         // Chassis
@@ -141,7 +164,7 @@ class Truck {
             this.roundRect(x, y, w, h);
         }
 
-        // Fifth Wheel
+        // Fifth Wheel (where the trailer hooks on)
         const fifthWheel = () => {
             let w = 35;
             let h = 50;
@@ -245,11 +268,11 @@ class Truck {
         if (this.break && this.velocity < 0) { this.velocity += this.breakForce; }
 
         // Steering
-        if (this.rightTurn) { this.steer.angle += this.steer.force; }
-        if (this.leftTurn) { this.steer.angle -= this.steer.force; }
+        if (this.rightTurn) { this.steer.angle += this.steer.speed; }
+        if (this.leftTurn) { this.steer.angle -= this.steer.speed; }
         // If the steering maxes out, set it to the max angle
-        if (this.steer.angle > this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
-        if (this.steer.angle < -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
+        if (this.steer.angle >= this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
+        if (this.steer.angle <= -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
 
         // Apply Steering
         if (Math.abs(this.velocity) > 0) {
@@ -257,49 +280,59 @@ class Truck {
         }
 
         // Center Steering Angle
-        // The further from center, the faster it corrects
-        const steeringCorrection = 1 / (Math.abs(this.steer.angle) / this.steer.maxAngle);
+        const steeringCorrection = 1;
         if (!this.rightTurn && !this.leftTurn) {
             // If there are no inputs, steer back to center with the regular steering force, modified by the steeringCorrection
-            if (this.steer.angle > 0) { this.steer.angle -= this.steer.force * steeringCorrection; }
-            if (this.steer.angle < 0) { this.steer.angle += this.steer.force * steeringCorrection; }
+            if (this.steer.angle > 0) { this.steer.angle -= this.steer.speed * steeringCorrection; }
+            if (this.steer.angle < 0) { this.steer.angle += this.steer.speed * steeringCorrection; }
         }
 
-        console.log("SteerAngle:" + this.steer.angle.toFixed(5), "Velocity:" + this.velocity.toFixed(2), "Direction:" + this.direction.toFixed(5), "SteeringCorrection:" + steeringCorrection.toFixed(5));
+        // If steering close to center, center it
+        if (!this.rightTurn && !this.leftTurn && Math.abs(this.steer.angle) < this.steer.speed * 2) { this.steer.angle = 0; }
+
+        // console.log("Direction:" + (this.direction * 180 / Math.PI).toFixed(2), "Steer Angle:" + (this.steer.angle * 180 / Math.PI).toFixed(2));
     }
 
     debug() {
-        let x, y, w, h;
-
         // DEBUG Center Point
-        ctx.fillStyle = "lightGreen";
-        ctx.beginPath();
-        ctx.arc(this.center.x, this.center.y, 20, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
+        const centerPoint = () => {
+            ctx.fillStyle = "lightGreen";
+            ctx.beginPath();
+            ctx.arc(this.center.x, this.center.y, 20, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        }
 
         // DEBUG Front Collider
-        ctx.fillStyle = "orange";
-        ctx.beginPath();
-        ctx.arc(this.frontCollider.x, this.frontCollider.y, 20, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
+        const frontCollider = () => {
+            ctx.fillStyle = "orange";
+            ctx.beginPath();
+            ctx.arc(this.frontCollider.x, this.frontCollider.y, 20, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        }
 
         // DEBUG Velocity Vector
-        if (this.break) {
-            ctx.strokeStyle = "red";
-        } else {
-            ctx.strokeStyle = "blue";
+        const velocityVector = () => {
+            if (this.break) {
+                ctx.strokeStyle = "red";
+            } else {
+                ctx.strokeStyle = "blue";
+            }
+            ctx.lineWidth = 20;
+            const x = this.center.x;
+            const y = this.center.y;
+            const w = this.center.x + Math.sin(this.direction) * this.velocity * 100;
+            const h = this.center.y - Math.cos(this.direction) * this.velocity * 100;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.stroke();
         }
-        ctx.lineWidth = 20;
-        x = this.center.x;
-        y = this.center.y;
-        w = this.center.x + Math.sin(this.direction) * this.velocity * 100;
-        h = this.center.y - Math.cos(this.direction) * this.velocity * 100;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(w, h);
-        ctx.closePath();
-        ctx.stroke();
+
+        centerPoint();
+        frontCollider();
+        velocityVector();
     }
 }
