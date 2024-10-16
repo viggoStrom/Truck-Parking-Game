@@ -10,13 +10,13 @@ class Truck {
         this.direction = direction; // rad
         this.steer = {
             angle: 0, // rad
-            speed: 0.02, // rad / frame
-            maxAngle: Math.PI / 3, // rad
+            speed: 0.01, // rad / frame
+            maxAngle: Math.PI / 4, // rad
         };
         this.velocity = 0; // dm / frame
         this.forwardForce = 1000; // N
         this.breakForce = 10000; // N
-        this.drag = 100; // N
+        this.dragForce = 100; // N
         this.mass = {
             current: 7000, // kg
             dry: 7000, // kg
@@ -30,11 +30,16 @@ class Truck {
         };
         this.chassis = {
             width: 24, // dm
-            length: 60, // dm
+            length: 52, // dm
         }
         this.center = {
             x: fractionPosX * canvas.width,
             y: fractionPosY * canvas.height,
+        };
+        this.axle = {
+            front: this.chassis.length - this.cab.length, // dm
+            rear1: -2, // dm
+            rear2: 8, // dm
         };
 
         // States
@@ -129,20 +134,20 @@ class Truck {
 
             // Front axle (articulated)
             x = this.center.x - this.chassis.width / 2 - w / 4;
-            y = this.center.y - this.chassis.length + this.cab.length;
+            y = this.center.y - this.axle.front;
             this.renderWheel(x, y, w, h, this.steer.angle);
             x = this.center.x + this.chassis.width / 2 + w / 4;
             this.renderWheel(x, y, w, h, this.steer.angle);
 
             // Rear axles
             x = this.center.x - this.chassis.width / 2;
-            y = this.center.y - h * 4 / 5;
+            y = this.center.y + this.axle.rear1;
             this.renderWheel(x, y, w, h);
             x = this.center.x + this.chassis.width / 2;
             this.renderWheel(x, y, w, h);
 
             x = this.center.x - this.chassis.width / 2;
-            y = this.center.y + h / 2;
+            y = this.center.y + this.axle.rear2;
             this.renderWheel(x, y, w, h, -this.steer.angle / 10);
             x = this.center.x + this.chassis.width / 2;
             this.renderWheel(x, y, w, h, -this.steer.angle / 10);
@@ -151,7 +156,7 @@ class Truck {
         // Chassis
         const chassis = () => {
             const x = this.center.x - this.cab.width / 2 + (this.cab.width - this.chassis.width) / 2;  // dm
-            const y = this.center.y - this.chassis.length * 5 / 6; // dm
+            const y = this.center.y - this.chassis.length * 6 / 8; // dm
             const w = this.chassis.width; // dm
             const h = this.chassis.length; // dm
 
@@ -252,15 +257,16 @@ class Truck {
 
         // Wall collision
         // If the truck hits a wall, reverse the velocity and move the truck back
-        if (this.center.x > canvas.width - 45) { this.center.x = canvas.width - 45; this.velocity = -this.velocity * 0.2 };
-        if (this.center.x < 45) { this.center.x = 45; this.velocity = -this.velocity * 0.2 };
-        if (this.center.y > canvas.height - 45) { this.center.y = canvas.height - 45; this.velocity = -this.velocity * 0.2 };
-        if (this.center.y < 45) { this.center.y = 45; this.velocity = -this.velocity * 0.2 };
+        const sideMargin = 10; // dm
+        if (this.center.x > canvas.width - sideMargin) { this.center.x = canvas.width - sideMargin; this.velocity = -this.velocity * 0.2 };
+        if (this.center.x < sideMargin) { this.center.x = sideMargin; this.velocity = -this.velocity * 0.2 };
+        if (this.center.y > canvas.height - sideMargin) { this.center.y = canvas.height - sideMargin; this.velocity = -this.velocity * 0.2 };
+        if (this.center.y < sideMargin) { this.center.y = sideMargin; this.velocity = -this.velocity * 0.2 };
         // Does the same but for the front collider
-        if (this.frontCollider.x > canvas.width - 45) { this.velocity = -this.velocity * 0.2; this.center.x = canvas.width - 45 - spineLength * Math.sin(this.direction); };
-        if (this.frontCollider.x < 45) { this.velocity = -this.velocity * 0.2; this.center.x = 45 - spineLength * Math.sin(this.direction); };
-        if (this.frontCollider.y > canvas.height - 45) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - 45 + spineLength * Math.cos(this.direction); };
-        if (this.frontCollider.y < 45) { this.velocity = -this.velocity * 0.2; this.center.y = 45 + spineLength * Math.cos(this.direction); };
+        if (this.frontCollider.x > canvas.width - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = canvas.width - sideMargin - spineLength * Math.sin(this.direction); };
+        if (this.frontCollider.x < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = sideMargin - spineLength * Math.sin(this.direction); };
+        if (this.frontCollider.y > canvas.height - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - sideMargin + spineLength * Math.cos(this.direction); };
+        if (this.frontCollider.y < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = sideMargin + spineLength * Math.cos(this.direction); };
 
         // 
         // New physics
@@ -277,91 +283,50 @@ class Truck {
             // If there are no inputs, steer back to center with the regular steering force
             this.steer.angle -= Math.sign(this.steer.angle) * this.steer.speed;
         }
+        // If steering close to center, center it
+        if (
+            !this.rightTurn && !this.leftTurn
+            &&
+            Math.abs(this.steer.angle) < this.steer.speed * 1.1
+        ) {
+            this.steer.angle = 0;
+        }
 
         // Calc acceleration
-        const acceleration = this.forwardForce / this.mass.current;
+        const acceleration = (this.forwardForce / this.mass.current) / 10; // dm / frame^2
 
         // Apply Gas
-        if (this.forward) { this.velocity += acceleration; }
-        if (this.backward) { this.velocity -= acceleration / 2; } // Just half the acceleration for reverse
+        if (this.forward && !this.break) { this.velocity += acceleration; }
+        if (this.backward && !this.break) { this.velocity -= acceleration / 2; } // Just half the acceleration for reverse
+
+        // Apply Break
+        if (this.break) {
+            const breakVel = (this.breakForce / this.mass.current) / 10; // dm / frame^2
+            if (this.velocity > 0) { this.velocity -= breakVel; if (this.velocity < 0) { this.velocity = 0; } }
+            if (this.velocity < 0) { this.velocity += breakVel; if (this.velocity > 0) { this.velocity = 0; } }
+        }
 
         // Calc drag
-        const drag = this.drag * this.mass.current * Math.sign(this.velocity); // dm / frame^2
+        const drag = ((this.dragForce / this.mass.current) / 10); // dm / frame^2
 
         // Apply Drag
-        this.velocity -= drag;
+        if (this.velocity > 0) { this.velocity -= drag; }
+        if (this.velocity < 0) { this.velocity += drag; }
+
+        // If the velocity is close to 0, set it to 0
+        if (!this.forward && !this.backward && (Math.abs(this.velocity) < 0.01)) { this.velocity = 0; }
+
+        // Apply Steering
+        const wheelBase = this.axle.front - this.axle.rear1;
+        const turnRadius = wheelBase / Math.tan(this.steer.angle);
+        const w = this.velocity / turnRadius;
+
+        // Apply Rotation
+        this.direction += w;
 
         // Apply Velocity to Truck Position
         this.center.x += this.velocity * Math.sin(this.direction);
         this.center.y -= this.velocity * Math.cos(this.direction);
-
-
-        // // Apply Friction
-        // if (this.velocity < 0) { this.velocity += this.drag; }
-        // if (this.velocity > 0) { this.velocity -= this.drag; }
-
-        // // Near 0 Velocity Sets Velocity To 0
-        // if (Math.abs(this.velocity).toFixed(2) == 0) { this.velocity = 0; }
-
-        // // Apply Acceleration
-        // if (this.forward) { this.velocity += this.acceleration; }
-        // if (this.backward) { this.velocity -= this.acceleration / 2; }
-
-        // // Apply Velocity to Truck Position
-        // this.center.x += this.velocity * Math.sin(this.direction);
-        // this.center.y -= this.velocity * Math.cos(this.direction);
-
-        // // Breaking
-        // if (this.break && this.velocity > 0) { this.velocity -= this.breakForce; }
-        // if (this.break && this.velocity < 0) { this.velocity += this.breakForce; }
-
-        // // Steering
-        // if (this.rightTurn) { this.steer.angle += this.steer.speed; }
-        // if (this.leftTurn) { this.steer.angle -= this.steer.speed; }
-        // // If the steering maxes out, set it to the max angle
-        // if (this.steer.angle >= this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
-        // if (this.steer.angle <= -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
-
-        // // Apply Steering
-        // if (Math.abs(this.velocity) > 0) {
-        //     // 
-        //     // x: x-composite of steer force
-        //     // s: spine length
-        //     // u: steer angle
-        //     // v: direction
-        //     // F: forward force
-        //     // 
-        //     // F = m * a
-        //     // 
-        //     // v = atan(x/s)
-        //     // 
-        //     // tan(u) = x / F
-        //     // 
-        //     // x = F * tan(u)
-        //     // 
-
-        //     const spineLength = this.chassis.length - this.cab.length;
-        //     const steerForce = this.mass.current * this.acceleration;
-
-        //     // Calculate the x-component of the steering force
-        //     const x = steerForce * Math.tan(this.steer.angle) / 1000;
-        //     // Calculate the new direction
-        //     const v = Math.atan2(x, spineLength);
-
-        //     // Apply the new direction
-        //     this.direction += v;
-        // }
-
-        // // Center Steering Angle
-        // const steeringCorrection = 1;
-        // if (!this.rightTurn && !this.leftTurn) {
-        //     // If there are no inputs, steer back to center with the regular steering force, modified by the steeringCorrection
-        //     if (this.steer.angle > 0) { this.steer.angle -= this.steer.speed * steeringCorrection; }
-        //     if (this.steer.angle < 0) { this.steer.angle += this.steer.speed * steeringCorrection; }
-        // }
-
-        // // If steering close to center, center it
-        // if (!this.rightTurn && !this.leftTurn && Math.abs(this.steer.angle) < this.steer.speed * 2) { this.steer.angle = 0; }
     }
 
     debug() {
