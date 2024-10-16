@@ -3,8 +3,8 @@ const canvas = document.getElementById("main-canvas");
 /** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext("2d");
 
-canvas.height = 256;
-canvas.width = 256;
+canvas.height = 256; // dm
+canvas.width = 256; // dm
 
 const ui = new UI();
 

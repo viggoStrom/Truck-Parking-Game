@@ -7,15 +7,14 @@ class Truck {
         this.level = level;
 
         // Movement
-        this.direction = direction;
+        this.direction = direction; // rad
         this.steer = {
-            angle: 0,
-            speed: 0.02,
-            maxAngle: Math.PI / 2.8,
+            angle: 0, // rad
+            speed: 0.02, // rad / frame
+            maxAngle: Math.PI / 3, // rad
         };
-
-        this.velocity = 0;
-        this.acceleration = 1000; // N
+        this.velocity = 0; // dm / frame
+        this.forwardForce = 1000; // N
         this.breakForce = 10000; // N
         this.drag = 100; // N
         this.mass = {
@@ -112,14 +111,6 @@ class Truck {
         ctx.roundRect(x - w / 2, y - h / 2, w, h, 2);
         ctx.fill();
 
-        // Debug red circle
-        ctx.fillStyle = "red";
-        ctx.beginPath();
-        ctx.arc(x, y, w / 2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.closePath();
-        ctx.fillStyle = "black";
-
         // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
     }
@@ -138,24 +129,23 @@ class Truck {
 
             // Front axle (articulated)
             x = this.center.x - this.chassis.width / 2 - w / 4;
-            y = this.center.y - this.chassis.length * 1 / 3;
+            y = this.center.y - this.chassis.length + this.cab.length;
             this.renderWheel(x, y, w, h, this.steer.angle);
             x = this.center.x + this.chassis.width / 2 + w / 4;
             this.renderWheel(x, y, w, h, this.steer.angle);
 
             // Rear axles
-            // x = this.center.x - this.cab.width / 2 - 6;
-            // y = this.center.y - 10 - 20;
-            // this.roundRect(x, y, w, h);
-            // x = this.center.x + this.cab.width / 2 - 14;
-            // y = this.center.y - 10 - 20;
-            // this.roundRect(x, y, w, h);
-            // x = this.center.x - this.cab.width / 2 - 6;
-            // y = this.center.y + 30 - 20;
-            // this.roundRect(x, y, w, h);
-            // x = this.center.x + this.cab.width / 2 - 14;
-            // y = this.center.y + 10;
-            // this.roundRect(x, y, w, h);
+            x = this.center.x - this.chassis.width / 2;
+            y = this.center.y - h * 4 / 5;
+            this.renderWheel(x, y, w, h);
+            x = this.center.x + this.chassis.width / 2;
+            this.renderWheel(x, y, w, h);
+
+            x = this.center.x - this.chassis.width / 2;
+            y = this.center.y + h / 2;
+            this.renderWheel(x, y, w, h, -this.steer.angle / 10);
+            x = this.center.x + this.chassis.width / 2;
+            this.renderWheel(x, y, w, h, -this.steer.angle / 10);
         }
 
         // Chassis
@@ -272,24 +262,9 @@ class Truck {
         if (this.frontCollider.y > canvas.height - 45) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - 45 + spineLength * Math.cos(this.direction); };
         if (this.frontCollider.y < 45) { this.velocity = -this.velocity * 0.2; this.center.y = 45 + spineLength * Math.cos(this.direction); };
 
-        // Apply Friction
-        if (this.velocity < 0) { this.velocity += this.drag; }
-        if (this.velocity > 0) { this.velocity -= this.drag; }
-
-        // Near 0 Velocity Sets Velocity To 0
-        if (Math.abs(this.velocity).toFixed(2) == 0) { this.velocity = 0; }
-
-        // Apply Acceleration
-        if (this.forward) { this.velocity += this.acceleration; }
-        if (this.backward) { this.velocity -= this.acceleration / 2; }
-
-        // Apply Velocity to Truck Position
-        this.center.x += this.velocity * Math.sin(this.direction);
-        this.center.y -= this.velocity * Math.cos(this.direction);
-
-        // Breaking
-        if (this.break && this.velocity > 0) { this.velocity -= this.breakForce; }
-        if (this.break && this.velocity < 0) { this.velocity += this.breakForce; }
+        // 
+        // New physics
+        // 
 
         // Steering
         if (this.rightTurn) { this.steer.angle += this.steer.speed; }
@@ -297,47 +272,96 @@ class Truck {
         // If the steering maxes out, set it to the max angle
         if (this.steer.angle >= this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
         if (this.steer.angle <= -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
-
-        // Apply Steering
-        if (Math.abs(this.velocity) > 0) {
-            // 
-            // x: x-composite of steer force
-            // s: spine length
-            // u: steer angle
-            // v: direction
-            // F: forward force
-            // 
-            // F = m * a
-            // 
-            // v = atan(x/s)
-            // 
-            // tan(u) = x / F
-            // 
-            // x = F * tan(u)
-            // 
-
-            const spineLength = this.chassis.length - this.cab.length;
-            const steerForce = this.mass.current * this.acceleration;
-
-            // Calculate the x-component of the steering force
-            const x = steerForce * Math.tan(this.steer.angle) / 1000;
-            // Calculate the new direction
-            const v = Math.atan2(x, spineLength);
-
-            // Apply the new direction
-            this.direction += v;
-        }
-
         // Center Steering Angle
-        const steeringCorrection = 1;
         if (!this.rightTurn && !this.leftTurn) {
-            // If there are no inputs, steer back to center with the regular steering force, modified by the steeringCorrection
-            if (this.steer.angle > 0) { this.steer.angle -= this.steer.speed * steeringCorrection; }
-            if (this.steer.angle < 0) { this.steer.angle += this.steer.speed * steeringCorrection; }
+            // If there are no inputs, steer back to center with the regular steering force
+            this.steer.angle -= Math.sign(this.steer.angle) * this.steer.speed;
         }
 
-        // If steering close to center, center it
-        if (!this.rightTurn && !this.leftTurn && Math.abs(this.steer.angle) < this.steer.speed * 2) { this.steer.angle = 0; }
+        // Calc acceleration
+        const acceleration = this.forwardForce / this.mass.current;
+
+        // Apply Gas
+        if (this.forward) { this.velocity += acceleration; }
+        if (this.backward) { this.velocity -= acceleration / 2; } // Just half the acceleration for reverse
+
+        // Calc drag
+        const drag = this.drag * this.mass.current * Math.sign(this.velocity); // dm / frame^2
+
+        // Apply Drag
+        this.velocity -= drag;
+
+        // Apply Velocity to Truck Position
+        this.center.x += this.velocity * Math.sin(this.direction);
+        this.center.y -= this.velocity * Math.cos(this.direction);
+
+
+        // // Apply Friction
+        // if (this.velocity < 0) { this.velocity += this.drag; }
+        // if (this.velocity > 0) { this.velocity -= this.drag; }
+
+        // // Near 0 Velocity Sets Velocity To 0
+        // if (Math.abs(this.velocity).toFixed(2) == 0) { this.velocity = 0; }
+
+        // // Apply Acceleration
+        // if (this.forward) { this.velocity += this.acceleration; }
+        // if (this.backward) { this.velocity -= this.acceleration / 2; }
+
+        // // Apply Velocity to Truck Position
+        // this.center.x += this.velocity * Math.sin(this.direction);
+        // this.center.y -= this.velocity * Math.cos(this.direction);
+
+        // // Breaking
+        // if (this.break && this.velocity > 0) { this.velocity -= this.breakForce; }
+        // if (this.break && this.velocity < 0) { this.velocity += this.breakForce; }
+
+        // // Steering
+        // if (this.rightTurn) { this.steer.angle += this.steer.speed; }
+        // if (this.leftTurn) { this.steer.angle -= this.steer.speed; }
+        // // If the steering maxes out, set it to the max angle
+        // if (this.steer.angle >= this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
+        // if (this.steer.angle <= -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
+
+        // // Apply Steering
+        // if (Math.abs(this.velocity) > 0) {
+        //     // 
+        //     // x: x-composite of steer force
+        //     // s: spine length
+        //     // u: steer angle
+        //     // v: direction
+        //     // F: forward force
+        //     // 
+        //     // F = m * a
+        //     // 
+        //     // v = atan(x/s)
+        //     // 
+        //     // tan(u) = x / F
+        //     // 
+        //     // x = F * tan(u)
+        //     // 
+
+        //     const spineLength = this.chassis.length - this.cab.length;
+        //     const steerForce = this.mass.current * this.acceleration;
+
+        //     // Calculate the x-component of the steering force
+        //     const x = steerForce * Math.tan(this.steer.angle) / 1000;
+        //     // Calculate the new direction
+        //     const v = Math.atan2(x, spineLength);
+
+        //     // Apply the new direction
+        //     this.direction += v;
+        // }
+
+        // // Center Steering Angle
+        // const steeringCorrection = 1;
+        // if (!this.rightTurn && !this.leftTurn) {
+        //     // If there are no inputs, steer back to center with the regular steering force, modified by the steeringCorrection
+        //     if (this.steer.angle > 0) { this.steer.angle -= this.steer.speed * steeringCorrection; }
+        //     if (this.steer.angle < 0) { this.steer.angle += this.steer.speed * steeringCorrection; }
+        // }
+
+        // // If steering close to center, center it
+        // if (!this.rightTurn && !this.leftTurn && Math.abs(this.steer.angle) < this.steer.speed * 2) { this.steer.angle = 0; }
     }
 
     debug() {
