@@ -15,23 +15,23 @@ class Truck {
         };
 
         this.velocity = 0;
-        this.acceleration = 5 / 100;
-        this.breakForce = 10 / 100;
-        this.drag = 1 / 100; // How much the vehicle is slowed down by friction with the ground and air
+        this.acceleration = 1000; // N
+        this.breakForce = 10000; // N
+        this.drag = 100; // N
         this.mass = {
-            current: 2000,
-            dry: 2000,
+            current: 7000, // kg
+            dry: 7000, // kg
         };
 
         // Rendering
         this.color = "white";
         this.cab = {
-            width: 100,
-            length: 85,
+            width: 25, // dm
+            length: 20, // dm
         };
         this.chassis = {
-            width: 95,
-            length: 220,
+            width: 24, // dm
+            length: 60, // dm
         }
         this.center = {
             x: fractionPosX * canvas.width,
@@ -83,7 +83,7 @@ class Truck {
 
         // Draw
         ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 5);
+        ctx.roundRect(x, y, w, h, 3);
         ctx.fill();
 
         // Restore the canvas to the previous state but with the new drawing
@@ -91,8 +91,8 @@ class Truck {
     }
 
     renderWheel(x, y, w, h, angle = 0) {
-        x += w / 2;
-        y += h / 2;
+        // x += w / 2;
+        // y -= h / 2;
 
         // Save the state of the canvas
         ctx.save();
@@ -106,10 +106,19 @@ class Truck {
         ctx.rotate(angle);
         ctx.translate(-x, -y);
 
+
         // Draw
         ctx.beginPath();
-        ctx.roundRect(x - w / 2, y - h / 2, w, h, 5);
+        ctx.roundRect(x - w / 2, y - h / 2, w, h, 2);
         ctx.fill();
+
+        // Debug red circle
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(x, y, w / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.closePath();
+        ctx.fillStyle = "black";
 
         // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
@@ -123,42 +132,38 @@ class Truck {
         // Wheels
         const wheels = () => {
             let x, y;
-            const w = 20;
-            const h = 30;
+            const w = 3; // dm
+            const h = 8; // dm
             ctx.fillStyle = "black";
 
-            x = this.center.x - this.cab.width / 2 - 8;
-            y = this.center.y - 130 - 20;
+            // Front axle (articulated)
+            x = this.center.x - this.chassis.width / 2 - w / 4;
+            y = this.center.y - this.chassis.length * 1 / 3;
             this.renderWheel(x, y, w, h, this.steer.angle);
-            // this.roundRect(x, y, w, h);
-            x = this.center.x + this.cab.width / 2 - 12;
-            y = this.center.y - 130 - 20;
+            x = this.center.x + this.chassis.width / 2 + w / 4;
             this.renderWheel(x, y, w, h, this.steer.angle);
+
+            // Rear axles
+            // x = this.center.x - this.cab.width / 2 - 6;
+            // y = this.center.y - 10 - 20;
             // this.roundRect(x, y, w, h);
-            x = this.center.x - this.cab.width / 2 - 6;
-            y = this.center.y - 10 - 20;
-            this.roundRect(x, y, w, h);
-            x = this.center.x + this.cab.width / 2 - 14;
-            y = this.center.y - 10 - 20;
-            this.roundRect(x, y, w, h);
-            x = this.center.x - this.cab.width / 2 - 6;
-            y = this.center.y + 30 - 20;
-            this.roundRect(x, y, w, h);
-            x = this.center.x + this.cab.width / 2 - 14;
-            y = this.center.y + 10;
-            this.roundRect(x, y, w, h);
-
-
-            // x = this.center.x - 100;
-            // y = this.center.y - 150;
+            // x = this.center.x + this.cab.width / 2 - 14;
+            // y = this.center.y - 10 - 20;
+            // this.roundRect(x, y, w, h);
+            // x = this.center.x - this.cab.width / 2 - 6;
+            // y = this.center.y + 30 - 20;
+            // this.roundRect(x, y, w, h);
+            // x = this.center.x + this.cab.width / 2 - 14;
+            // y = this.center.y + 10;
+            // this.roundRect(x, y, w, h);
         }
 
         // Chassis
         const chassis = () => {
-            let x = this.center.x - this.cab.width / 2 + (this.cab.width - this.chassis.width) / 2;
-            let y = this.center.y - this.chassis.length / 2 - 65;
-            let w = this.chassis.width;
-            let h = this.chassis.length;
+            const x = this.center.x - this.cab.width / 2 + (this.cab.width - this.chassis.width) / 2;  // dm
+            const y = this.center.y - this.chassis.length * 5 / 6; // dm
+            const w = this.chassis.width; // dm
+            const h = this.chassis.length; // dm
 
             ctx.fillStyle = "#505050";
             this.roundRect(x, y, w, h);
@@ -166,45 +171,64 @@ class Truck {
 
         // Fifth Wheel (where the trailer hooks on)
         const fifthWheel = () => {
-            let w = 35;
-            let h = 50;
-            let x = this.center.x;
-            let y = this.center.y;
+            let x, y // dm
+            const w = 7; // dm
+            const h = 10; // dm
 
             ctx.fillStyle = "gray";
+
+            // Save the state of the canvas
             ctx.save();
             ctx.beginPath();
             ctx.translate(this.center.x, this.center.y);
             ctx.rotate(this.direction);
 
-            ctx.moveTo(x - w / 2 + 5 - this.center.x, y + h / 2 - this.center.y);
-            ctx.lineTo(x + w / 2 - 5 - this.center.x, y + h / 2 - this.center.y);
-            ctx.lineTo(x + w / 2 - this.center.x, y - this.center.y);
-            ctx.lineTo(x - w / 2 - this.center.x, y - this.center.y);
+            // The prongs of the plate
+            x = - w / 2;
+            y = 0;
+            ctx.moveTo(x, y);
+            x = - w / 3;
+            y = h / 2;
+            ctx.lineTo(x, y);
+            x = w / 3;
+            y = h / 2;
+            ctx.lineTo(x, y);
+            x = w / 2;
+            y = 0;
+            ctx.lineTo(x, y);
             ctx.closePath();
             ctx.fill();
 
+            // The top part of the plate
             ctx.beginPath();
-            ctx.arc(x - this.center.x, y - this.center.y + 1, w / 2, Math.PI, 0);
+            x = 0;
+            y = 0;
+            ctx.arc(x, y, w / 2, Math.PI, 0);
             ctx.closePath();
             ctx.fill();
 
+            // The hole
             ctx.fillStyle = "black";
-            ctx.fillRect(x - w / 6 - this.center.x, y - h / 25 - this.center.y, w / 3, h * 0.545);
+            x = - w / 5;
+            y = 0;
+            ctx.fillRect(x, y, w * 2 / 5, h / 2);
             ctx.beginPath();
-            ctx.arc(x - this.center.x, y - this.center.y, w / 6, 0, Math.PI * 2);
+            x = 0;
+            y = 0;
+            ctx.arc(x, y, w / 5, 2 * Math.PI, 0);
             ctx.closePath();
             ctx.fill();
 
+            // Restore the canvas to the previous state but with the new drawing
             ctx.restore();
         }
 
         // Cab
         const cab = () => {
-            let x = this.center.x - this.cab.width / 2;
-            let y = this.center.y - this.chassis.length / 2 - 65;
-            let w = this.cab.width;
-            let h = this.cab.length;
+            const x = this.center.x - this.cab.width / 2; // dm
+            const y = this.center.y - this.chassis.length * 5 / 6; // dm
+            const w = this.cab.width; // dm
+            const h = this.cab.length; // dm
 
             ctx.fillStyle = this.color;
             this.roundRect(x, y, w, h);
@@ -212,10 +236,10 @@ class Truck {
 
         // Windshield
         const windshield = () => {
-            let w = this.chassis.width * .95;
-            let h = 15;
-            let x = this.center.x - w / 2;
-            let y = this.center.y - this.chassis.length * .8;
+            const w = this.chassis.width; // dm
+            const h = this.cab.length / 5; // dm
+            const x = this.center.x - w / 2; // dm
+            const y = this.center.y - this.chassis.length * 5 / 6; // dm
 
             ctx.fillStyle = "#212121";
             this.roundRect(x, y, w, h);
@@ -276,7 +300,32 @@ class Truck {
 
         // Apply Steering
         if (Math.abs(this.velocity) > 0) {
-            this.direction += this.steer.angle * this.velocity / 1000;
+            // 
+            // x: x-composite of steer force
+            // s: spine length
+            // u: steer angle
+            // v: direction
+            // F: forward force
+            // 
+            // F = m * a
+            // 
+            // v = atan(x/s)
+            // 
+            // tan(u) = x / F
+            // 
+            // x = F * tan(u)
+            // 
+
+            const spineLength = this.chassis.length - this.cab.length;
+            const steerForce = this.mass.current * this.acceleration;
+
+            // Calculate the x-component of the steering force
+            const x = steerForce * Math.tan(this.steer.angle) / 1000;
+            // Calculate the new direction
+            const v = Math.atan2(x, spineLength);
+
+            // Apply the new direction
+            this.direction += v;
         }
 
         // Center Steering Angle
@@ -289,37 +338,40 @@ class Truck {
 
         // If steering close to center, center it
         if (!this.rightTurn && !this.leftTurn && Math.abs(this.steer.angle) < this.steer.speed * 2) { this.steer.angle = 0; }
-
-        // console.log("Direction:" + (this.direction * 180 / Math.PI).toFixed(2), "Steer Angle:" + (this.steer.angle * 180 / Math.PI).toFixed(2));
     }
 
     debug() {
         // DEBUG Center Point
         const centerPoint = () => {
+            ctx.globalAlpha = 0.5;
             ctx.fillStyle = "lightGreen";
             ctx.beginPath();
-            ctx.arc(this.center.x, this.center.y, 20, 0, 2 * Math.PI);
+            ctx.arc(this.center.x, this.center.y, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fill();
+            ctx.globalAlpha = 1;
         }
 
         // DEBUG Front Collider
         const frontCollider = () => {
+            ctx.globalAlpha = 0.5;
             ctx.fillStyle = "orange";
             ctx.beginPath();
-            ctx.arc(this.frontCollider.x, this.frontCollider.y, 20, 0, 2 * Math.PI);
+            ctx.arc(this.frontCollider.x, this.frontCollider.y, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fill();
+            ctx.globalAlpha = 1;
         }
 
         // DEBUG Velocity Vector
         const velocityVector = () => {
+            ctx.globalAlpha = 0.5;
             if (this.break) {
                 ctx.strokeStyle = "red";
             } else {
                 ctx.strokeStyle = "blue";
             }
-            ctx.lineWidth = 20;
+            ctx.lineWidth = 4;
             const x = this.center.x;
             const y = this.center.y;
             const w = this.center.x + Math.sin(this.direction) * this.velocity * 100;
@@ -329,6 +381,7 @@ class Truck {
             ctx.lineTo(w, h);
             ctx.closePath();
             ctx.stroke();
+            ctx.globalAlpha = 1;
         }
 
         centerPoint();

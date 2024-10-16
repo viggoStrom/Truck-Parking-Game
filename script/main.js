@@ -3,8 +3,8 @@ const canvas = document.getElementById("main-canvas");
 /** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext("2d");
 
-canvas.height = 1080;
-canvas.width = 1080;
+canvas.height = 256;
+canvas.width = 256;
 
 const ui = new UI();
 
@@ -21,6 +21,7 @@ const render = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Level renders all it's children
+    // level.render(debug = false);
     level.render(debug=true);
 
     window.requestAnimationFrame(render);
