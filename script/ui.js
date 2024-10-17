@@ -30,4 +30,22 @@ class UI {
         ctx.fillText("Congrats!", canvas.width / 2, canvas.height / 2);
         ctx.strokeText("Congrats!", canvas.width / 2, canvas.height / 2);
     }
+
+    hookOn(x, y) {
+        ctx.globalAlpha = 0.6;
+
+        // Background
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.roundRect(x - 20, y - 20, 40, 40, 5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "white";
+        ctx.font = "bold 20px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("H", x, y + 8);
+
+        ctx.globalAlpha = 1;
+    }
 }

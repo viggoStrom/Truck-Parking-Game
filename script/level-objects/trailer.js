@@ -1,342 +1,236 @@
 class Trailer {
-    constructor(level, fractionPosX, fractionPosY, direction = 0, color = "white") {
+    constructor(level, fractionPosX, fractionPosY, options = { direction: 0, color: "white", truck: Truck }) {
+        // Default Options
+        options = {
+            direction: 0,
+            color: "white",
+            truck: null,
+            ...options
+        }
+
+        // Hopefully Unique ID
         this.id = Math.floor(Date.now() * Math.random());
 
+        // Level Reference
         this.level = level;
+        // Parent truck reference
+        this.truck = options.truck;
 
-        this.color = color;
-        this.width = 115;
-        this.length = 500;
-        this.spineLength = this.length - 150;
+        // Movement
+        this.direction = options.direction; // rad
+        this.velocity = 0; // dm / frame
+        this.breakForce = 3000; // N
+        this.dragForce = 100; // N
+        this.mass = {
+            current: 7000, // kg
+            dry: 7000, // kg
+        };
 
-        this.centerX = fractionPosX * canvas.width;
-        this.centerY = fractionPosY * canvas.height;
-        this.attachPointX = this.centerX;
-        this.attachPointY = this.centerY - this.length + 150;
-        this.direction = direction;
-        this.velocity = 0;
-        this.break = false;
-
-        this.hooked = false;
-        this.hookedBy = "";
-        this.canHook = true;
-        this.isParked = false;
-
-        this.breakForce = 80;
-        this.friction = 10;
-        this.cargoMass = 0;
-        this.dryMass = 2000;
-    }
-
-    updateDeltaAngle(truck) {
-        // this.deltaAngle = Math.asin(Math.sin(truck.direction)) - Math.asin(Math.sin(this.direction));
-        this.deltaAngle = truck.direction - this.direction;
-    }
-
-    updateDistance(truck) {
-        this.distance = Math.sqrt((truck.centerX - this.centerX) ** 2 + (truck.centerY - this.centerY) ** 2);
+        // Rendering
+        this.color = options.color;
+        this.chassis = {
+            width: 25, // dm
+            length: 100, // dm
+        }
+        this.center = {
+            x: fractionPosX * canvas.width,
+            y: fractionPosY * canvas.height,
+        };
+        this.axle = {
+            rear1: -5, // dm
+            rear2: 5, // dm
+        };
+        this.hookLocation = this.chassis.length * 6 / 8; // A fraction of the chassis length
+        this.canHook = false;
     }
 
     roundRect(x, y, w, h) {
+        // Save the state of the canvas
         ctx.save();
-        ctx.beginPath();
-        ctx.translate(this.centerX, this.centerY);
+        // Offset the canvas to the center of the truck, rotate it, and then offset it back
+        ctx.translate(this.center.x, this.center.y);
         ctx.rotate(this.direction);
-        ctx.roundRect(x - this.centerX, y - this.centerY, w, h, 5);
-        ctx.closePath();
+        ctx.translate(-this.center.x, -this.center.y);
+
+        // Draw
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 3);
         ctx.fill();
+
+        // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
+    }
+
+    renderWheel(x, y, w, h, angle = 0) {
+        // Save the state of the canvas
+        ctx.save();
+        // Offset the canvas to the center of the truck, rotate it, and then offset it back
+        ctx.translate(this.center.x, this.center.y);
+        ctx.rotate(this.direction);
+        ctx.translate(-this.center.x, -this.center.y);
+
+        // Rotate again
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.translate(-x, -y);
+
+
+        // Draw
+        ctx.beginPath();
+        ctx.roundRect(x - w / 2, y - h / 2, w, h, 2);
+        ctx.fill();
+
+        // Restore the canvas to the previous state but with the new drawing
+        ctx.restore();
+    }
+
+    update() {
+        this.move();
+
+        if (!this.truck) { return; }
+
+        // Check if truck is close enough to hook on
+        const hookOnDistance = 10; // dm
+        const truckX = this.truck.center.x;
+        const truckY = this.truck.center.y;
+        const trailerX = this.center.x + Math.sin(this.direction) * this.hookLocation;
+        const trailerY = this.center.y - Math.cos(this.direction) * this.hookLocation;
+        const distance = Math.sqrt((truckX - trailerX) ** 2 + (truckY - trailerY) ** 2);
+
+        if (distance < hookOnDistance) {
+            this.canHook = true;
+        } else {
+            this.canHook = false;
+        }
     }
 
     render() {
-        let x, y, w, h;
-
         // Wheels
-        ctx.fillStyle = "black";
-        x = this.centerX - this.width / 2 - 6;
-        y = this.centerY + 5;
-        w = 20;
-        h = 30;
-        this.roundRect(x, y, w, h);
-        x = this.centerX + this.width / 2 - 1; 4
-        y = this.centerY + 5;
-        this.roundRect(x, y, w, h);
-        x = this.centerX - this.width / 2 - 6;
-        y = this.centerY - 35;
-        this.roundRect(x, y, w, h);
-        x = this.centerX + this.width / 2 - 1; 4
-        y = this.centerY - 35;
-        this.roundRect(x, y, w, h);
+        const wheels = () => {
+            let x, y;
+            const w = 3; // dm
+            const h = 8; // dm
+            ctx.fillStyle = "black";
 
+            // Forward axle
+            x = this.center.x - this.chassis.width / 2;
+            y = this.center.y + this.axle.rear1;
+            this.renderWheel(x, y, w, h);
+            x = this.center.x + this.chassis.width / 2;
+            this.renderWheel(x, y, w, h);
 
-        // Back Bumper
-        x = this.centerX - this.width / 2;
-        y = this.centerY + 8 + 50;
-        w = this.width;
-        h = 40;
-        ctx.fillStyle = "#505050";
-        this.roundRect(x, y, w, h);
-
-
-        // Cargo Space
-        x = this.centerX - this.width / 2;
-        y = this.centerY - this.length + 40 + 50;
-        w = this.width;
-        h = this.length;
-        ctx.fillStyle = this.color;
-        this.roundRect(x, y, w, h);
-
-
-        // Can Hook Prompt
-        if ((this.canHook && !this.hooked && !this.isParked) || (this.isParked && this.hooked)) {
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.beginPath();
-            ctx.roundRect(this.attachPointX - 70, this.attachPointY - 70, 140, 140, 20);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            ctx.font = "bold 60px sans-serif";
-            ctx.fillText("H", this.attachPointX, this.attachPointY + 20);
+            // Rear axle
+            x = this.center.x - this.chassis.width / 2;
+            y = this.center.y + this.axle.rear2;
+            this.renderWheel(x, y, w, h);
+            x = this.center.x + this.chassis.width / 2;
+            this.renderWheel(x, y, w, h);
         }
+
+
+        // Curtain 
+        const curtain = () => {
+            const x = this.center.x - this.chassis.width / 2; // dm
+            const y = this.center.y - this.chassis.length * 7 / 8; // dm
+            const w = this.chassis.width; // dm
+            const h = this.chassis.length; // dm
+
+            ctx.fillStyle = this.color;
+            this.roundRect(x, y, w, h);
+        }
+
+        wheels();
+        curtain();
     }
 
     move() {
-        // Update Attach Points and Delta Angle 
-        this.spineLength = this.length - 150;
-        this.attachPointX = this.centerX + Math.sin(this.direction) * this.spineLength;
-        this.attachPointY = this.centerY - Math.cos(this.direction) * this.spineLength;
-
+        // Update Front Collider  
+        const spineLength = this.hookLocation; // dm
+        this.frontCollider = {
+            x: this.center.x + Math.sin(this.direction) * spineLength,
+            y: this.center.y - Math.cos(this.direction) * spineLength,
+        };
 
         // Wall collision
-        if (this.centerX > canvas.width - 45) { this.centerX = canvas.width - 45; this.velocity = -this.velocity * 0.2; }
-        if (this.centerX < 0 + 45) { this.centerX = 0 + 45; this.velocity = -this.velocity * 0.2; }
-        if (this.centerY > canvas.height - 45) { this.centerY = canvas.height - 45; this.velocity = -this.velocity * 0.2; }
-        if (this.centerY < 0 + 45) { this.centerY = 0 + 45; this.velocity = -this.velocity * 0.2; }
+        // If the truck hits a wall, reverse the velocity and move the truck back
+        const sideMargin = 10; // dm
+        if (this.center.x > canvas.width - sideMargin) { this.center.x = canvas.width - sideMargin; this.velocity = -this.velocity * 0.2 };
+        if (this.center.x < sideMargin) { this.center.x = sideMargin; this.velocity = -this.velocity * 0.2 };
+        if (this.center.y > canvas.height - sideMargin) { this.center.y = canvas.height - sideMargin; this.velocity = -this.velocity * 0.2 };
+        if (this.center.y < sideMargin) { this.center.y = sideMargin; this.velocity = -this.velocity * 0.2 };
+        // Does the same but for the front collider
+        if (this.frontCollider.x > canvas.width - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = canvas.width - sideMargin - spineLength * Math.sin(this.direction); };
+        if (this.frontCollider.x < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = sideMargin - spineLength * Math.sin(this.direction); };
+        if (this.frontCollider.y > canvas.height - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - sideMargin + spineLength * Math.cos(this.direction); };
+        if (this.frontCollider.y < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = sideMargin + spineLength * Math.cos(this.direction); };
 
-        if (this.attachPointX > canvas.width - 45) { ; this.velocity = -this.velocity * 0.2; this.centerX = canvas.width - 45 - this.spineLength * Math.sin(this.direction); }
-        if (this.attachPointX < 45) { ; this.velocity = -this.velocity * 0.2; this.centerX = 45 - this.spineLength * Math.sin(this.direction); }
-        if (this.attachPointY > canvas.height - 45) { ; this.velocity = -this.velocity * 0.2; this.centerY = canvas.height - 45 + this.spineLength * Math.cos(this.direction); }
-        if (this.attachPointY < 45) { ; this.velocity = -this.velocity * 0.2; this.centerY = 45 + this.spineLength * Math.cos(this.direction); }
+        // Apply Break
+        if (this.break) {
+            const breakVel = (this.breakForce / this.mass.current) / 10; // dm / frame^2
+            if (this.velocity > 0) { this.velocity -= breakVel; if (this.velocity < 0) { this.velocity = 0; } }
+            if (this.velocity < 0) { this.velocity += breakVel; if (this.velocity > 0) { this.velocity = 0; } }
+        }
 
+        // Calc drag
+        const drag = ((this.dragForce / this.mass.current) / 10); // dm / frame^2
+        // Apply Drag
+        if (this.velocity > 0) { this.velocity -= drag; }
+        if (this.velocity < 0) { this.velocity += drag; }
 
-        // Update Friction
-        this.trucks.forEach(truck => {
-            if (this.hooked && truck.id == this.hookedBy) {
-                this.friction = truck.friction;
-            }
-            else {
-                this.friction = 5 + Math.abs(this.velocity) / 2;
-            }
-        })
+        // If the velocity is close to 0, set it to 0
+        if (!this.forward && !this.backward && (Math.abs(this.velocity) < 0.01)) { this.velocity = 0; }
 
-
-        // Near 0 Velocity Sets Velocity To 0
-        if (Math.abs(this.velocity).toFixed(2) == 0) { this.velocity = 0; }
-
-        // Apply Friction
-        else if (this.velocity < 0) { this.velocity += this.friction / (this.cargoMass + this.dryMass); }
-        else if (this.velocity > 0) { this.velocity -= this.friction / (this.cargoMass + this.dryMass); }
-
-        // Turn to Truck
-        this.trucks.forEach(truck => {
-            if (this.hooked && truck.id == this.hookedBy) {
-                const deltaX = truck.centerX - this.centerX;
-                const deltaY = this.centerY - truck.centerY;
-                const c = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-                if (truck.centerX > this.centerX) {
-                    this.direction = -Math.asin(deltaY / c) + Math.PI / 2;
-                } else {
-                    this.direction = Math.asin(deltaY / c) - Math.PI / 2;
-                }
-            }
-        });
-
-        // Calculate Velocity V2
-        this.trucks.forEach(truck => {
-            if (this.hookedBy == truck.id) {
-                this.updateDistance(truck);
-                this.updateDeltaAngle(truck);
-                const deltaDistance = this.distance - this.spineLength;
-                const deadZone = 0.1;
-
-                if (Math.abs(deltaDistance) < deadZone) {
-                    this.velocity = truck.velocity * Math.cos(this.deltaAngle);
-                }
-                else if (deltaDistance > deadZone) {
-                    this.velocity += 0.2 - 0.1 * Math.cos(this.deltaAngle);
-                }
-                else if (deltaDistance < -deadZone) {
-                    this.velocity -= 0.2 - 0.1 * Math.cos(this.deltaAngle);
-                }
-            }
-        });
-
-
-        // Apply Velocity to Trailer Position
-        this.centerX += this.velocity * Math.sin(this.direction);
-        this.centerY -= this.velocity * Math.cos(this.direction);
-
-
-        // Breaking
-        this.trucks.forEach(truck => {
-            if (truck.id == this.hookedBy && truck.break && this.velocity > 0) { this.velocity -= this.breakForce / (this.cargoMass + this.dryMass); }
-            if (truck.id == this.hookedBy && truck.break && this.velocity < 0) { this.velocity += this.breakForce / (this.cargoMass + this.dryMass); }
-        });
-
-
-        // Hook on Trailer
-        const canAttachCheck = (truck, r) => {
-            return (
-                truck.centerX < this.attachPointX + r &&
-                truck.centerX > this.attachPointX - r &&
-                truck.centerY < this.attachPointY + r &&
-                truck.centerY > this.attachPointY - r
-            )
-        };
-        this.trucks.forEach(truck => {
-            const radius = 10;
-            this.canHook = false;
-            this.updateDeltaAngle(truck);
-            this.updateDistance(truck);
-
-            // If They're Hooked Just Continue
-            if (
-                truck.id == this.hookedBy &&
-                this.hooked &&
-                truck.hooked &&
-                canAttachCheck(truck, radius)
-            ) {
-
-            }
-
-            // If Truck Isn't Attached Offer, Prompt To Do So
-            else if (
-                truck.id != this.hookedBy &&
-                !this.hooked &&
-                !truck.hooked &&
-                canAttachCheck(truck, radius)
-            ) {
-                this.canHook = true
-            }
-
-            // If Truck Hooks and Trailer Isn't Hooked, Hook
-            else if (
-                (
-                    truck.id != this.hookedBy &&
-                    truck.hooked &&
-                    !this.hooked &&
-                    canAttachCheck(truck, radius)
-                )
-            ) {
-                this.hookOn(truck)
-            }
-
-            // Defaults to Setting the Truck to Unhooked
-            else {
-                truck.hooked = false
-            }
-
-            // If Truck Is: Clicking Hook Off, Their Angle Is Too Sharp, or The Distance Between Them Is Too Great, Detach the Trailer
-            if (
-                (
-                    truck.id == this.hookedBy &&
-                    truck.hasTrailer &&
-                    !truck.hooked &&
-                    canAttachCheck(truck, radius)
-                )
-                ||
-                (
-                    truck.id == this.hookedBy &&
-                    truck.hasTrailer &&
-                    Math.abs(Math.acos(Math.cos(this.deltaAngle))) > 2
-                )
-                ||
-                (
-                    truck.id == this.hookedBy &&
-                    truck.hasTrailer &&
-                    Math.abs(this.distance - this.spineLength) > 50
-                )
-            ) {
-                this.hookOff(truck)
-            }
-        })
-    }
-
-
-    hookOn(truck) {
-        this.hooked = true;
-        this.hookedBy = truck.id;
-        truck.mass += (this.cargoMass + this.dryMass);
-        truck.hasTrailer = true;
-    }
-
-
-    hookOff(truck) {
-        this.hooked = false;
-        this.hookedBy = "";
-        truck.mass -= (this.cargoMass + this.dryMass);
-        truck.hasTrailer = false;
-        truck.hooked = false;
-    }
-
-
-    save() {
-        // Save Data to Local Storage in Case of Unintentional Reload
-        const data = {
-            centerX: this.centerX,
-            centerY: this.centerY,
-            direction: this.direction,
-            velocity: this.velocity,
-        };
-
-        window.localStorage.setItem(this.id, JSON.stringify(data));
-    }
-
-    load() {
-        return JSON.parse(window.localStorage.getItem(this.id));
+        // Apply Velocity to Truck Position
+        this.center.x += this.velocity * Math.sin(this.direction);
+        this.center.y -= this.velocity * Math.cos(this.direction);
     }
 
     debug() {
-        let x, y, w, h;
-
         // DEBUG Center Point
-        ctx.fillStyle = "lightGreen";
-        ctx.beginPath();
-        ctx.arc(this.centerX, this.centerY, 20, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
+        const centerPoint = () => {
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = "lightGreen";
+            ctx.beginPath();
+            ctx.arc(this.center.x, this.center.y, 4, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
 
-
-        // DEBUG Attach Point
-        ctx.fillStyle = "orange";
-        x = this.attachPointX - this.centerX;
-        y = this.attachPointY - this.centerY;
-        ctx.save();
-        ctx.beginPath();
-        ctx.translate(this.centerX, this.centerY);
-        ctx.arc(x, y, 20, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
+        // DEBUG Front Collider
+        const frontCollider = () => {
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = "orange";
+            ctx.beginPath();
+            ctx.arc(this.frontCollider.x, this.frontCollider.y, 4, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
 
         // DEBUG Velocity Vector
-        if (this.break) {
-            ctx.strokeStyle = "red";
-        } else {
-            ctx.strokeStyle = "blue";
+        const velocityVector = () => {
+            ctx.globalAlpha = 0.5;
+            if (this.break) {
+                ctx.strokeStyle = "red";
+            } else {
+                ctx.strokeStyle = "blue";
+            }
+            ctx.lineWidth = 4;
+            const x = this.center.x;
+            const y = this.center.y;
+            const w = this.center.x + Math.sin(this.direction) * this.velocity * 100;
+            const h = this.center.y - Math.cos(this.direction) * this.velocity * 100;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.globalAlpha = 1;
         }
-        ctx.lineWidth = 20;
-        x = this.centerX;
-        y = this.centerY;
-        w = this.centerX + Math.sin(this.direction) * this.velocity * 100;
-        h = this.centerY - Math.cos(this.direction) * this.velocity * 100;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(w, h);
-        ctx.closePath();
-        ctx.stroke();
+
+        centerPoint();
+        frontCollider();
+        velocityVector();
     }
 }

@@ -10,20 +10,20 @@ class Truck {
         this.direction = direction; // rad
         this.steer = {
             angle: 0, // rad
-            speed: 0.01, // rad / frame
-            maxAngle: Math.PI / 5, // rad
+            speed: 0.015, // rad / frame
+            maxAngle: Math.PI / 6, // rad
         };
         this.velocity = 0; // dm / frame
         this.forwardForce = 1000; // N
         this.breakForce = 3000; // N
-        this.dragForce = 100; // N
+        this.dragForce = 200; // N
         this.mass = {
             current: 7000, // kg
             dry: 7000, // kg
         };
 
         // Rendering
-        this.color = "white";
+        this.color = color;
         this.cab = {
             width: 25, // dm
             length: 20, // dm
@@ -95,9 +95,6 @@ class Truck {
     }
 
     renderWheel(x, y, w, h, angle = 0) {
-        // x += w / 2;
-        // y -= h / 2;
-
         // Save the state of the canvas
         ctx.save();
         // Offset the canvas to the center of the truck, rotate it, and then offset it back
