@@ -60,6 +60,8 @@ class Truck {
     init() {
         // All the trailers in the level
         this.trailers = this.level.gameElements.filter(element => element instanceof Trailer);
+        // All the trucks in the level
+        this.trucks = this.level.gameElements.filter(element => element instanceof Truck);
     }
 
     initInput() {
