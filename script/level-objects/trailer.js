@@ -44,6 +44,11 @@ class Trailer {
         this.canHook = false;
     }
 
+    init() {
+        // All the trucks in the level
+        this.trucks = this.level.gameElements.filter(element => element instanceof Truck);
+    }
+
     roundRect(x, y, w, h) {
         // Save the state of the canvas
         ctx.save();
@@ -85,23 +90,11 @@ class Trailer {
     }
 
     update() {
-        this.move();
 
-        if (!this.truck) { return; }
+    }
 
-        // Check if truck is close enough to hook on
-        const hookOnDistance = 10; // dm
-        const truckX = this.truck.center.x;
-        const truckY = this.truck.center.y;
-        const trailerX = this.center.x + Math.sin(this.direction) * this.hookLocation;
-        const trailerY = this.center.y - Math.cos(this.direction) * this.hookLocation;
-        const distance = Math.sqrt((truckX - trailerX) ** 2 + (truckY - trailerY) ** 2);
-
-        if (distance < hookOnDistance) {
-            this.canHook = true;
-        } else {
-            this.canHook = false;
-        }
+    connectTo(truck) {
+        this.truck = truck;
     }
 
     render() {
@@ -139,50 +132,18 @@ class Trailer {
             this.roundRect(x, y, w, h);
         }
 
-        wheels();
-        curtain();
-    }
-
-    move() {
-        // Update Front Collider  
-        const spineLength = this.hookLocation; // dm
-        this.frontCollider = {
-            x: this.center.x + Math.sin(this.direction) * spineLength,
-            y: this.center.y - Math.cos(this.direction) * spineLength,
-        };
-
-        // Wall collision
-        // If the truck hits a wall, reverse the velocity and move the truck back
-        const sideMargin = 10; // dm
-        if (this.center.x > canvas.width - sideMargin) { this.center.x = canvas.width - sideMargin; this.velocity = -this.velocity * 0.2 };
-        if (this.center.x < sideMargin) { this.center.x = sideMargin; this.velocity = -this.velocity * 0.2 };
-        if (this.center.y > canvas.height - sideMargin) { this.center.y = canvas.height - sideMargin; this.velocity = -this.velocity * 0.2 };
-        if (this.center.y < sideMargin) { this.center.y = sideMargin; this.velocity = -this.velocity * 0.2 };
-        // Does the same but for the front collider
-        if (this.frontCollider.x > canvas.width - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = canvas.width - sideMargin - spineLength * Math.sin(this.direction); };
-        if (this.frontCollider.x < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = sideMargin - spineLength * Math.sin(this.direction); };
-        if (this.frontCollider.y > canvas.height - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - sideMargin + spineLength * Math.cos(this.direction); };
-        if (this.frontCollider.y < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = sideMargin + spineLength * Math.cos(this.direction); };
-
-        // Apply Break
-        if (this.break) {
-            const breakVel = (this.breakForce / this.mass.current) / 10; // dm / frame^2
-            if (this.velocity > 0) { this.velocity -= breakVel; if (this.velocity < 0) { this.velocity = 0; } }
-            if (this.velocity < 0) { this.velocity += breakVel; if (this.velocity > 0) { this.velocity = 0; } }
+        const hookOnUI = () => {
+            // The hovering H that indicates the trailer can hook on
+            if (this.canHook) {
+                const trailerX = this.center.x + Math.sin(this.direction) * this.hookLocation;
+                const trailerY = this.center.y - Math.cos(this.direction) * this.hookLocation;
+                ui.hookOn(trailerX, trailerY);
+            }
         }
 
-        // Calc drag
-        const drag = ((this.dragForce / this.mass.current) / 10); // dm / frame^2
-        // Apply Drag
-        if (this.velocity > 0) { this.velocity -= drag; }
-        if (this.velocity < 0) { this.velocity += drag; }
-
-        // If the velocity is close to 0, set it to 0
-        if (!this.forward && !this.backward && (Math.abs(this.velocity) < 0.01)) { this.velocity = 0; }
-
-        // Apply Velocity to Truck Position
-        this.center.x += this.velocity * Math.sin(this.direction);
-        this.center.y -= this.velocity * Math.cos(this.direction);
+        wheels();
+        curtain();
+        hookOnUI();
     }
 
     debug() {

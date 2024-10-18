@@ -50,6 +50,11 @@ class Truck {
         this.initInput();
     }
 
+    init() {
+        // All the trailers in the level
+        this.trailers = this.level.gameElements.filter(element => element instanceof Trailer);
+    }
+
     initInput() {
         this.keydownListener = document.addEventListener("keydown", event => {
             const key = event.key.toLowerCase();
@@ -118,7 +123,26 @@ class Truck {
     }
 
     update() {
+        this.collisions();
+
         this.move();
+
+        // Hooking
+        if (this.hasTrailer) {
+            this.trailer.hookOn(); // HookOn with no arg is detaching
+            return;
+        }
+        this.trailers.forEach(trailer => {
+            if (!trailer.canHook) { return; }
+
+            // If the trailer can hook on, and the truck is not hooked on to anything, hook on
+            if (this.isHooked) {
+                trailer.hookOn(this);
+
+                this.trailer = trailer;
+                this.hasTrailer = true;
+            }
+        });
     }
 
     render() {
@@ -244,7 +268,7 @@ class Truck {
         windshield();
     }
 
-    move() {
+    collisions() {
         // Update Front Collider  
         const spineLength = this.chassis.length - this.cab.length;
         this.frontCollider = {
@@ -265,6 +289,19 @@ class Truck {
         if (this.frontCollider.y > canvas.height - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - sideMargin + spineLength * Math.cos(this.direction); };
         if (this.frontCollider.y < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = sideMargin + spineLength * Math.cos(this.direction); };
 
+        // Trailer Collision
+        this.trailers.forEach(trailer => {
+            if (this.isHooked) {
+                // If the trailer hits a wall, reverse the velocity and move the trailer back
+                if (trailer.center.x > canvas.width - sideMargin) { trailer.center.x = canvas.width - sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
+                if (trailer.center.x < sideMargin) { trailer.center.x = sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
+                if (trailer.center.y > canvas.height - sideMargin) { trailer.center.y = canvas.height - sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
+                if (trailer.center.y < sideMargin) { trailer.center.y = sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
+            }
+        });
+    }
+
+    move() {
         // Steering
         if (this.rightTurn) { this.steer.angle += this.steer.speed; }
         if (this.leftTurn) { this.steer.angle -= this.steer.speed; }

@@ -11,5 +11,9 @@ class Level1 extends LevelTemplate {
         this.gameElements.push(
             new Trailer(this, 1 / 2, 3 / 4, { truck: this.gameElements[0] }),
         );
+
+        this.gameElements.forEach(element => {
+            element.init();
+        });
     }
 }
