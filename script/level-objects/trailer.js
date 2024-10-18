@@ -25,6 +25,10 @@ class Trailer {
             current: 7000, // kg
             dry: 7000, // kg
         };
+        this.center = {
+            x: fractionPosX * canvas.width,
+            y: fractionPosY * canvas.height,
+        };
 
         // Rendering
         this.color = options.color;
@@ -32,21 +36,31 @@ class Trailer {
             width: 25, // dm
             length: 100, // dm
         }
-        this.center = {
-            x: fractionPosX * canvas.width,
-            y: fractionPosY * canvas.height,
-        };
         this.axle = {
             rear1: -5, // dm
             rear2: 5, // dm
         };
         this.hookLocation = this.chassis.length * 6 / 8; // A fraction of the chassis length
+
+        // Colliders
+        this.colliders = [
+            // offset is the distance from center and will take the direction into account when projecting
+            { offset: this.chassis.length * 4 / 9, radius: 12 },
+            { offset: this.chassis.length * 2 / 9, radius: 12 },
+            { offset: 0, radius: 12 },
+        ]
+
+        // States 
         this.canHook = false;
     }
 
     init() {
         // All the trucks in the level
         this.trucks = this.level.gameElements.filter(element => element instanceof Truck);
+    }
+
+    connectTo(truck) {
+        this.truck = truck;
     }
 
     roundRect(x, y, w, h) {
@@ -86,14 +100,6 @@ class Trailer {
 
         // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
-    }
-
-    update() {
-
-    }
-
-    connectTo(truck) {
-        this.truck = truck;
     }
 
     render() {
@@ -145,30 +151,71 @@ class Trailer {
         hookOnUI();
     }
 
-    debug() {
-        // DEBUG Center Point
-        const centerPoint = () => {
-            ctx.globalAlpha = 0.5;
-            ctx.fillStyle = "lightGreen";
-            ctx.beginPath();
-            ctx.arc(this.center.x, this.center.y, 4, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-            ctx.globalAlpha = 1;
+    getProjectedColliders() {
+        return this.colliders.map((collider) => {
+            return {
+                x: this.center.x - collider.offset * Math.cos(this.direction + Math.PI / 2),
+                y: this.center.y - collider.offset * Math.sin(this.direction + Math.PI / 2),
+                radius: collider.radius,
+            }
+        });
+    }
+
+    collisions() {
+        // Update Front Collider  
+        const projectedColliders = this.getProjectedColliders();
+
+        // Wall collisions
+        const wallCollide = (collider, index) => {
+            const wallBounceFactor = 0.2;
+            // X and Y offset from the center to the current collider
+            const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
+            const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
+
+            // Left wall
+            if (collider.x < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = x + collider.radius;
+            }
+            // Top wall
+            if (collider.y < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = y + collider.radius;
+            }
+            // Right wall
+            if (collider.x > canvas.width - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = canvas.width + x - collider.radius;
+            }
+            // Bottom wall
+            if (collider.y > canvas.height - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = canvas.height + y - collider.radius;
+            }
         }
 
-        // DEBUG Front Collider
-        const frontCollider = () => {
-            const frontX = this.center.x + Math.sin(this.direction) * this.chassis.length * 6 / 8;
-            const frontY = this.center.y - Math.cos(this.direction) * this.chassis.length * 6 / 8;
+        // Check and apply wall collisions to all colliders
+        projectedColliders.forEach(wallCollide);
+    }
 
-            ctx.globalAlpha = 0.5;
-            ctx.fillStyle = "orange";
-            ctx.beginPath();
-            ctx.arc(frontX, frontY, 4, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-            ctx.globalAlpha = 1;
+    update() {
+        this.collisions();
+    }
+
+    debug() {
+        const projectedColliders = this.getProjectedColliders();
+
+        // DEBUG Colliders
+        const colliders = () => {
+            projectedColliders.forEach(collider => {
+                ctx.globalAlpha = 0.2;
+                ctx.fillStyle = "orange";
+                ctx.beginPath();
+                ctx.arc(collider.x, collider.y, collider.radius, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
         }
 
         // DEBUG Velocity Vector
@@ -192,8 +239,7 @@ class Trailer {
             ctx.globalAlpha = 1;
         }
 
-        centerPoint();
-        frontCollider();
         velocityVector();
+        colliders();
     }
 }

@@ -44,9 +44,9 @@ class Truck {
 
         // Colliders
         this.colliders = [
-            // yOffset is the distance from center and will take the direction into account when projecting
-            { yOffset: 0, radius: 10 },
-            { yOffset: this.axle.front, radius: 10 },
+            // offset is the distance from center and will take the direction into account when projecting
+            { offset: 0, radius: 11 },
+            { offset: this.axle.front, radius: 11 },
         ]
 
         // States
@@ -257,8 +257,8 @@ class Truck {
     getProjectedColliders() {
         return this.colliders.map((collider) => {
             return {
-                x: this.center.x - collider.yOffset * Math.cos(this.direction + Math.PI / 2),
-                y: this.center.y - collider.yOffset * Math.sin(this.direction + Math.PI / 2),
+                x: this.center.x - collider.offset * Math.cos(this.direction + Math.PI / 2),
+                y: this.center.y - collider.offset * Math.sin(this.direction + Math.PI / 2),
                 radius: collider.radius,
             }
         });
@@ -269,11 +269,32 @@ class Truck {
         const projectedColliders = this.getProjectedColliders();
 
         // Wall collisions
-        const wallCollide = (collider) => {
-            if (collider.x > canvas.width - collider.radius) { collider.x = canvas.width - collider.radius; this.velocity = -this.velocity * 0.2 };
-            if (collider.x < collider.radius) { collider.x = collider.radius; this.velocity = -this.velocity * 0.2 };
-            if (collider.y > canvas.height - collider.radius) { collider.y = canvas.height - collider.radius; this.velocity = -this.velocity * 0.2 };
-            if (collider.y < collider.radius) { collider.y = collider.radius; this.velocity = -this.velocity * 0.2 };
+        const wallCollide = (collider, index) => {
+            const wallBounceFactor = 0.2;
+            // X and Y offset from the center to the current collider
+            const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
+            const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
+
+            // Left wall
+            if (collider.x < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = x + collider.radius;
+            }
+            // Top wall
+            if (collider.y < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = y + collider.radius;
+            }
+            // Right wall
+            if (collider.x > canvas.width - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = canvas.width + x - collider.radius;
+            }
+            // Bottom wall
+            if (collider.y > canvas.height - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = canvas.height + y - collider.radius;
+            }
         }
 
         // Check and apply wall collisions to all colliders
@@ -338,8 +359,8 @@ class Truck {
     }
 
     update() {
-        this.move();
         this.collisions();
+        this.move();
     }
 
     debug() {
