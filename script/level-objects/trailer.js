@@ -160,10 +160,13 @@ class Trailer {
 
         // DEBUG Front Collider
         const frontCollider = () => {
+            const frontX = this.center.x + Math.sin(this.direction) * this.chassis.length * 6 / 8;
+            const frontY = this.center.y - Math.cos(this.direction) * this.chassis.length * 6 / 8;
+
             ctx.globalAlpha = 0.5;
             ctx.fillStyle = "orange";
             ctx.beginPath();
-            ctx.arc(this.frontCollider.x, this.frontCollider.y, 4, 0, 2 * Math.PI);
+            ctx.arc(frontX, frontY, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fill();
             ctx.globalAlpha = 1;
