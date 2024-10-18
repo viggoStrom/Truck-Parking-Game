@@ -21,6 +21,10 @@ class Truck {
             current: 7000, // kg
             dry: 7000, // kg
         };
+        this.center = {
+            x: fractionPosX * canvas.width,
+            y: fractionPosY * canvas.height,
+        };
 
         // Rendering
         this.color = color;
@@ -31,16 +35,19 @@ class Truck {
         this.chassis = {
             width: 24, // dm
             length: 52, // dm
-        }
-        this.center = {
-            x: fractionPosX * canvas.width,
-            y: fractionPosY * canvas.height,
         };
         this.axle = {
             front: this.chassis.length - this.cab.length, // dm
             rear1: -2, // dm
             rear2: 8, // dm
         };
+
+        // Colliders
+        this.colliders = [
+            // The coords are the distance from center that will take the direction into account
+            { x: 0, y: 0, radius: 10 },
+            { x: 0, y: this.axle.front, radius: 10 },
+        ]
 
         // States
         this.isHooked = false; // Whether the trucks fifth wheel is "locked" or not
@@ -79,6 +86,16 @@ class Truck {
             if (key == "d" || key == "arrowright") { this.rightTurn = false; }
             if (key == "a" || key == "arrowleft") { this.leftTurn = false; }
             if (key == " ") { this.break = false; event.preventDefault(); }
+        });
+    }
+
+    getProjectedColliders() {
+        return this.colliders.map((collider) => {
+            return {
+                x: this.center.x - collider.x * Math.cos(this.direction),
+                y: this.center.y - collider.y * Math.sin(this.direction),
+                radius: collider.radius,
+            }
         });
     }
 
@@ -123,26 +140,9 @@ class Truck {
     }
 
     update() {
-        this.collisions();
-
         this.move();
 
-        // Hooking
-        if (this.hasTrailer) {
-            this.trailer.hookOn(); // HookOn with no arg is detaching
-            return;
-        }
-        this.trailers.forEach(trailer => {
-            if (!trailer.canHook) { return; }
-
-            // If the trailer can hook on, and the truck is not hooked on to anything, hook on
-            if (this.isHooked) {
-                trailer.hookOn(this);
-
-                this.trailer = trailer;
-                this.hasTrailer = true;
-            }
-        });
+        this.collisions();
     }
 
     render() {
@@ -270,35 +270,18 @@ class Truck {
 
     collisions() {
         // Update Front Collider  
-        const spineLength = this.chassis.length - this.cab.length;
-        this.frontCollider = {
-            x: this.center.x + Math.sin(this.direction) * spineLength,
-            y: this.center.y - Math.cos(this.direction) * spineLength,
-        };
+        const projectedColliders = this.getProjectedColliders();
 
-        // Wall collision
-        // If the truck hits a wall, reverse the velocity and move the truck back
-        const sideMargin = 10; // dm
-        if (this.center.x > canvas.width - sideMargin) { this.center.x = canvas.width - sideMargin; this.velocity = -this.velocity * 0.2 };
-        if (this.center.x < sideMargin) { this.center.x = sideMargin; this.velocity = -this.velocity * 0.2 };
-        if (this.center.y > canvas.height - sideMargin) { this.center.y = canvas.height - sideMargin; this.velocity = -this.velocity * 0.2 };
-        if (this.center.y < sideMargin) { this.center.y = sideMargin; this.velocity = -this.velocity * 0.2 };
-        // Does the same but for the front collider
-        if (this.frontCollider.x > canvas.width - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = canvas.width - sideMargin - spineLength * Math.sin(this.direction); };
-        if (this.frontCollider.x < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.x = sideMargin - spineLength * Math.sin(this.direction); };
-        if (this.frontCollider.y > canvas.height - sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = canvas.height - sideMargin + spineLength * Math.cos(this.direction); };
-        if (this.frontCollider.y < sideMargin) { this.velocity = -this.velocity * 0.2; this.center.y = sideMargin + spineLength * Math.cos(this.direction); };
+        // Wall collisions
+        const wallCollide = (collider) => {
+            if (collider.x > canvas.width - collider.radius) { collider.x = canvas.width - collider.radius; this.velocity = -this.velocity * 0.2 };
+            if (collider.x < collider.radius) { collider.x = collider.radius; this.velocity = -this.velocity * 0.2 };
+            if (collider.y > canvas.height - collider.radius) { collider.y = canvas.height - collider.radius; this.velocity = -this.velocity * 0.2 };
+            if (collider.y < collider.radius) { collider.y = collider.radius; this.velocity = -this.velocity * 0.2 };
+        }
 
-        // Trailer Collision
-        this.trailers.forEach(trailer => {
-            if (this.isHooked) {
-                // If the trailer hits a wall, reverse the velocity and move the trailer back
-                if (trailer.center.x > canvas.width - sideMargin) { trailer.center.x = canvas.width - sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
-                if (trailer.center.x < sideMargin) { trailer.center.x = sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
-                if (trailer.center.y > canvas.height - sideMargin) { trailer.center.y = canvas.height - sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
-                if (trailer.center.y < sideMargin) { trailer.center.y = sideMargin; trailer.velocity = -trailer.velocity * 0.2 };
-            }
-        });
+        // Check and apply wall collisions to all colliders
+        projectedColliders.forEach(wallCollide);
     }
 
     move() {
@@ -348,10 +331,10 @@ class Truck {
         // Apply Steering
         const wheelBase = this.axle.front - this.axle.rear1;
         const turnRadius = wheelBase / Math.tan(this.steer.angle);
-        const w = this.velocity / turnRadius;
+        const changeInDirection = this.velocity / turnRadius;
 
         // Apply Rotation
-        this.direction += w;
+        this.direction += changeInDirection;
 
         // Apply Velocity to Truck Position
         this.center.x += this.velocity * Math.sin(this.direction);
@@ -359,26 +342,19 @@ class Truck {
     }
 
     debug() {
-        // DEBUG Center Point
-        const centerPoint = () => {
-            ctx.globalAlpha = 0.5;
-            ctx.fillStyle = "lightGreen";
-            ctx.beginPath();
-            ctx.arc(this.center.x, this.center.y, 4, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-            ctx.globalAlpha = 1;
-        }
+        const projectedColliders = this.getProjectedColliders();
 
-        // DEBUG Front Collider
-        const frontCollider = () => {
-            ctx.globalAlpha = 0.5;
-            ctx.fillStyle = "orange";
-            ctx.beginPath();
-            ctx.arc(this.frontCollider.x, this.frontCollider.y, 4, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-            ctx.globalAlpha = 1;
+        // DEBUG Colliders
+        const colliders = () => {
+            projectedColliders.forEach(collider => {
+                ctx.globalAlpha = 0.2;
+                ctx.fillStyle = "orange";
+                ctx.beginPath();
+                ctx.arc(collider.x, collider.y, collider.radius, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
         }
 
         // DEBUG Velocity Vector
@@ -402,8 +378,7 @@ class Truck {
             ctx.globalAlpha = 1;
         }
 
-        centerPoint();
-        frontCollider();
+        colliders();
         velocityVector();
     }
 }

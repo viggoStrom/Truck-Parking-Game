@@ -79,7 +79,6 @@ class Trailer {
         ctx.rotate(angle);
         ctx.translate(-x, -y);
 
-
         // Draw
         ctx.beginPath();
         ctx.roundRect(x - w / 2, y - h / 2, w, h, 2);
