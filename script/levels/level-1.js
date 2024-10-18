@@ -6,12 +6,10 @@ class Level1 extends LevelTemplate {
         // Set up the game elements
         this.gameElements = [
             new Truck(this, 1 / 2, 1 / 2),
+            new Trailer(this, 1 / 2, 3 / 4),
         ];
-        // Some game objects need references to other game objects so the get pushed after
-        this.gameElements.push(
-            new Trailer(this, 1 / 2, 3 / 4, { truck: this.gameElements[0] }),
-        );
 
+        // Some values in the elements are dependant on other elements so they need to be initialized after the list is complete 
         this.gameElements.forEach(element => {
             element.init();
         });
