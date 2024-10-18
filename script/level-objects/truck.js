@@ -44,9 +44,9 @@ class Truck {
 
         // Colliders
         this.colliders = [
-            // The coords are the distance from center that will take the direction into account
-            { x: 0, y: 0, radius: 10 },
-            { x: 0, y: this.axle.front, radius: 10 },
+            // yOffset is the distance from center and will take the direction into account when projecting
+            { yOffset: 0, radius: 10 },
+            { yOffset: this.axle.front, radius: 10 },
         ]
 
         // States
@@ -89,16 +89,6 @@ class Truck {
         });
     }
 
-    getProjectedColliders() {
-        return this.colliders.map((collider) => {
-            return {
-                x: this.center.x - collider.x * Math.cos(this.direction),
-                y: this.center.y - collider.y * Math.sin(this.direction),
-                radius: collider.radius,
-            }
-        });
-    }
-
     roundRect(x, y, w, h) {
         // Save the state of the canvas
         ctx.save();
@@ -137,12 +127,6 @@ class Truck {
 
         // Restore the canvas to the previous state but with the new drawing
         ctx.restore();
-    }
-
-    update() {
-        this.move();
-
-        this.collisions();
     }
 
     render() {
@@ -268,6 +252,16 @@ class Truck {
         windshield();
     }
 
+    getProjectedColliders() {
+        return this.colliders.map((collider) => {
+            return {
+                x: this.center.x - collider.yOffset * Math.cos(this.direction + Math.PI / 2),
+                y: this.center.y - collider.yOffset * Math.sin(this.direction + Math.PI / 2),
+                radius: collider.radius,
+            }
+        });
+    }
+
     collisions() {
         // Update Front Collider  
         const projectedColliders = this.getProjectedColliders();
@@ -339,6 +333,11 @@ class Truck {
         // Apply Velocity to Truck Position
         this.center.x += this.velocity * Math.sin(this.direction);
         this.center.y -= this.velocity * Math.cos(this.direction);
+    }
+
+    update() {
+        this.move();
+        this.collisions();
     }
 
     debug() {
