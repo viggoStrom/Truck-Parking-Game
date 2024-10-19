@@ -5,6 +5,8 @@ class Truck {
 
         // Level Reference
         this.level = level;
+        // Future Trailer Reference
+        this.trailer = null;
 
         // Movement
         this.direction = direction; // rad
@@ -50,8 +52,7 @@ class Truck {
         ]
 
         // States
-        this.isHooked = false; // Whether the trucks fifth wheel is "locked" or not
-        this.hasTrailer = false; // Whether the truck has a trailer attached or not
+        this.isHooking = false; // Whether the trucks fifth wheel is "locked" or not
 
         // Set up inputs
         this.initInput();
@@ -65,6 +66,16 @@ class Truck {
     }
 
     initInput() {
+        // Hooking cooldown
+        let allowedToHook = true;
+        const startCooldown = () => {
+            allowedToHook = false;
+            setTimeout(() => {
+                allowedToHook = true;
+            }, 500);
+        }
+
+        // Keydown Listener 
         this.keydownListener = document.addEventListener("keydown", event => {
             const key = event.key.toLowerCase();
 
@@ -72,23 +83,236 @@ class Truck {
             if (event.ctrlKey && !event.shiftKey && key === "r") { event.preventDefault(); } // Reload protection but allow hard refresh
             if (event.ctrlKey && key === "w") { event.preventDefault(); } // Close tab protection
 
+            // Set inputs
             if (key == "w" || key == "arrowup") { this.forward = true; event.preventDefault(); }
             if (key == "s" || key == "arrowdown") { this.backward = true; event.preventDefault(); }
             if (key == "d" || key == "arrowright") { this.rightTurn = true; }
             if (key == "a" || key == "arrowleft") { this.leftTurn = true; }
-            if (key == "h") { this.isHooked = !this.isHooked }
+            if (key == "h" && allowedToHook) { this.isHooking = !this.isHooking; startCooldown(); }
             if (key == " ") { this.break = true; event.preventDefault(); }
         });
 
+        // Keyup Listener
         this.keyupListener = document.addEventListener("keyup", event => {
             const key = event.key.toLowerCase();
 
+            // Set inputs
             if (key == "w" || key == "arrowup") { this.forward = false; event.preventDefault(); }
             if (key == "s" || key == "arrowdown") { this.backward = false; event.preventDefault(); }
             if (key == "d" || key == "arrowright") { this.rightTurn = false; }
             if (key == "a" || key == "arrowleft") { this.leftTurn = false; }
             if (key == " ") { this.break = false; event.preventDefault(); }
         });
+    }
+
+    getProjectedColliders() {
+        return this.colliders.map((collider) => {
+            return {
+                x: this.center.x - collider.offset * Math.cos(this.direction + Math.PI / 2),
+                y: this.center.y - collider.offset * Math.sin(this.direction + Math.PI / 2),
+                radius: collider.radius,
+            }
+        });
+    }
+
+    collisions() {
+        // Update Front Collider  
+        const projectedColliders = this.getProjectedColliders();
+
+        // Wall collisions
+        const wallCollide = (collider, index) => {
+            const wallBounceFactor = 0.2;
+
+            // X and Y offset from the center to the current collider
+            const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
+            const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
+
+            // Left wall
+            if (collider.x < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = x + collider.radius;
+            }
+            // Top wall
+            if (collider.y < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = y + collider.radius;
+            }
+            // Right wall
+            if (collider.x > canvas.width - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = canvas.width + x - collider.radius;
+            }
+            // Bottom wall
+            if (collider.y > canvas.height - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = canvas.height + y - collider.radius;
+            }
+        }
+
+        // Truck colliding with trailers
+        const trailerCollide = () => {
+            const trailerBounceFactor = 0.2;
+
+            this.trailers.forEach(trailer => {
+                const trailerColliders = trailer.getProjectedColliders();
+
+                // Check if any truck colliders are colliding with any trailer colliders
+                trailerColliders.forEach(trailerCollider => {
+                    projectedColliders.forEach(truckCollider => {
+                        const dx = trailerCollider.x - truckCollider.x;
+                        const dy = trailerCollider.y - truckCollider.y;
+                        // Distance between the two colliders
+                        const distance = Math.hypot(dx, dy);
+
+                        // If the distance is less than the sum of the radii, they are colliding
+                        if (distance < trailerCollider.radius + truckCollider.radius) {
+                            // Angle between the two colliders to calculate the push direction
+                            const angle = Math.atan2(dy, dx);
+                            const pushDistance = trailerCollider.radius + truckCollider.radius - distance;
+                            // Move the truck back
+                            this.center.x -= Math.cos(angle) * pushDistance;
+                            this.center.y -= Math.sin(angle) * pushDistance;
+
+                            // Reverse truck velocity to make it bounce
+                            this.velocity = -this.velocity * trailerBounceFactor;
+                        }
+                    });
+                });
+            });
+        }
+
+        // Run all collisions
+        projectedColliders.forEach(wallCollide);
+        trailerCollide();
+    }
+
+    move() {
+        // Steering
+        if (this.rightTurn) { this.steer.angle += this.steer.speed; }
+        if (this.leftTurn) { this.steer.angle -= this.steer.speed; }
+        // If the steering maxes out, set it to the max angle
+        if (this.steer.angle >= this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
+        if (this.steer.angle <= -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
+        // Center Steering Angle
+        if (!this.rightTurn && !this.leftTurn) {
+            // If there are no inputs, steer back to center with the regular steering force
+            this.steer.angle -= Math.sign(this.steer.angle) * this.steer.speed;
+        }
+        // If steering close to center, center it
+        if (
+            !this.rightTurn && !this.leftTurn
+            &&
+            Math.abs(this.steer.angle) < this.steer.speed * 1.1
+        ) {
+            this.steer.angle = 0;
+        }
+
+        // Forward acceleration
+        // Calculate acceleration, F = ma => a = F / m divided by 10 to make it dm / frame^2
+        const acceleration = (this.forwardForce / this.mass.current) / 10; // dm / frame^2
+        // Apply Gas
+        if (this.forward && !this.break) { this.velocity += acceleration; }
+        if (this.backward && !this.break) { this.velocity -= acceleration / 2; } // Just half the acceleration for reverse
+
+        // Apply Break
+        if (this.break) {
+            const breakVel = (this.breakForce / this.mass.current) / 10; // dm / frame^2
+            if (this.velocity > 0) { this.velocity -= breakVel; if (this.velocity < 0) { this.velocity = 0; } }
+            if (this.velocity < 0) { this.velocity += breakVel; if (this.velocity > 0) { this.velocity = 0; } }
+        }
+
+        // Calc drag
+        const drag = ((this.dragForce / this.mass.current) / 10); // dm / frame^2
+        // Apply Drag
+        if (this.velocity > 0) { this.velocity -= drag; }
+        if (this.velocity < 0) { this.velocity += drag; }
+
+        // If the velocity is close to 0, set it to 0
+        if (!this.forward && !this.backward && (Math.abs(this.velocity) < 0.01)) { this.velocity = 0; }
+
+        // Apply Steering
+        const wheelBase = this.axle.front - this.axle.rear1;
+        const turnRadius = wheelBase / Math.tan(this.steer.angle);
+        const changeInDirection = this.velocity / turnRadius;
+
+        // Apply Rotation
+        this.direction += changeInDirection;
+
+        // Apply Velocity to Truck Position
+        this.center.x += this.velocity * Math.sin(this.direction);
+        this.center.y -= this.velocity * Math.cos(this.direction);
+    }
+
+    trailerInteractions() {
+        let distance;
+
+        // Can the truck hook on to the closest trailer
+        const canHookOn = () => {
+            // Get the closest trailer by their hook location
+            const closestTrailer = this.trailers.reduce((closest, current) => {
+                const currentDistance = Math.hypot(
+                    current.center.x - this.center.x,
+                    current.center.y - this.center.y
+                );
+                const closestDistance = Math.hypot(
+                    closest.center.x - this.center.x,
+                    closest.center.y - this.center.y
+                );
+                return currentDistance < closestDistance ? current : closest;
+            });
+
+            // Check if the truck is close enough to the trailer to hook on
+            const hookLocation = closestTrailer.getHookLocation();
+            distance = Math.hypot(
+                hookLocation.x - this.center.x,
+                hookLocation.y - this.center.y
+            );
+            if (distance < closestTrailer.hookingRadius) {
+                if (!this.trailer) {
+                    closestTrailer.canHook = true;
+                } else {
+                    closestTrailer.canHook = false;
+                }
+
+                // If you can hook on, return the trailer
+                return closestTrailer;
+
+            } else {
+                closestTrailer.canHook = false;
+
+                // If you can't hook on, return null 
+                return null;
+            }
+        }
+
+        // Disconnect
+        // If it has a trailer and your pressing the hook button, disconnect
+        if (this.trailer && !this.isHooking) {
+            console.log("disconnecting");
+            this.trailer.connectTo(null);
+        }
+
+        // Hook on
+        const closestTrailer = canHookOn(); // returns the closest trailer or null
+        if (closestTrailer && this.isHooking && !this.trailer) {
+            console.log("hooking on");
+            closestTrailer.connectTo(this);
+        }
+
+        if (!this.trailer) { return; } // If there is no trailer, don't run the rest of the code
+
+        // Safety detach
+        // If the truck is too far from the trailer, detach it
+        if (distance > this.trailer.hookingRadius * 2) {
+            console.log("safety detach");
+            this.trailer.connectTo(null);
+        }
+    }
+
+    update() {
+        this.collisions();
+        this.move();
+        this.trailerInteractions();
     }
 
     roundRect(x, y, w, h) {
@@ -252,178 +476,6 @@ class Truck {
         fifthWheel();
         cab();
         windshield();
-    }
-
-    getProjectedColliders() {
-        return this.colliders.map((collider) => {
-            return {
-                x: this.center.x - collider.offset * Math.cos(this.direction + Math.PI / 2),
-                y: this.center.y - collider.offset * Math.sin(this.direction + Math.PI / 2),
-                radius: collider.radius,
-            }
-        });
-    }
-
-    collisions() {
-        // Update Front Collider  
-        const projectedColliders = this.getProjectedColliders();
-
-        // Wall collisions
-        const wallCollide = (collider, index) => {
-            const wallBounceFactor = 0.2;
-
-            // X and Y offset from the center to the current collider
-            const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
-            const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
-
-            // Left wall
-            if (collider.x < collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.x = x + collider.radius;
-            }
-            // Top wall
-            if (collider.y < collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.y = y + collider.radius;
-            }
-            // Right wall
-            if (collider.x > canvas.width - collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.x = canvas.width + x - collider.radius;
-            }
-            // Bottom wall
-            if (collider.y > canvas.height - collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.y = canvas.height + y - collider.radius;
-            }
-        }
-
-        // Truck colliding with trailers
-        const trailerCollide = () => {
-            const trailerBounceFactor = 0.2;
-
-            this.trailers.forEach(trailer => {
-                const trailerColliders = trailer.getProjectedColliders();
-
-                // Check if any truck colliders are colliding with any trailer colliders
-                trailerColliders.forEach(trailerCollider => {
-                    projectedColliders.forEach(truckCollider => {
-                        const dx = trailerCollider.x - truckCollider.x;
-                        const dy = trailerCollider.y - truckCollider.y;
-                        // Distance between the two colliders
-                        const distance = Math.hypot(dx, dy);
-
-                        // If the distance is less than the sum of the radii, they are colliding
-                        if (distance < trailerCollider.radius + truckCollider.radius) {
-                            // Angle between the two colliders to calculate the push direction
-                            const angle = Math.atan2(dy, dx);
-                            const pushDistance = trailerCollider.radius + truckCollider.radius - distance;
-                            // Move the truck back
-                            this.center.x -= Math.cos(angle) * pushDistance;
-                            this.center.y -= Math.sin(angle) * pushDistance;
-
-                            // Reverse truck velocity to make it bounce
-                            this.velocity = -this.velocity * trailerBounceFactor;
-                        }
-                    });
-                });
-            });
-        }
-
-        // Run all collisions
-        projectedColliders.forEach(wallCollide);
-        trailerCollide();
-    }
-
-    move() {
-        // Steering
-        if (this.rightTurn) { this.steer.angle += this.steer.speed; }
-        if (this.leftTurn) { this.steer.angle -= this.steer.speed; }
-        // If the steering maxes out, set it to the max angle
-        if (this.steer.angle >= this.steer.maxAngle) { this.steer.angle = this.steer.maxAngle; }
-        if (this.steer.angle <= -this.steer.maxAngle) { this.steer.angle = -this.steer.maxAngle; }
-        // Center Steering Angle
-        if (!this.rightTurn && !this.leftTurn) {
-            // If there are no inputs, steer back to center with the regular steering force
-            this.steer.angle -= Math.sign(this.steer.angle) * this.steer.speed;
-        }
-        // If steering close to center, center it
-        if (
-            !this.rightTurn && !this.leftTurn
-            &&
-            Math.abs(this.steer.angle) < this.steer.speed * 1.1
-        ) {
-            this.steer.angle = 0;
-        }
-
-        // Forward acceleration
-        // Calculate acceleration, F = ma => a = F / m divided by 10 to make it dm / frame^2
-        const acceleration = (this.forwardForce / this.mass.current) / 10; // dm / frame^2
-        // Apply Gas
-        if (this.forward && !this.break) { this.velocity += acceleration; }
-        if (this.backward && !this.break) { this.velocity -= acceleration / 2; } // Just half the acceleration for reverse
-
-        // Apply Break
-        if (this.break) {
-            const breakVel = (this.breakForce / this.mass.current) / 10; // dm / frame^2
-            if (this.velocity > 0) { this.velocity -= breakVel; if (this.velocity < 0) { this.velocity = 0; } }
-            if (this.velocity < 0) { this.velocity += breakVel; if (this.velocity > 0) { this.velocity = 0; } }
-        }
-
-        // Calc drag
-        const drag = ((this.dragForce / this.mass.current) / 10); // dm / frame^2
-        // Apply Drag
-        if (this.velocity > 0) { this.velocity -= drag; }
-        if (this.velocity < 0) { this.velocity += drag; }
-
-        // If the velocity is close to 0, set it to 0
-        if (!this.forward && !this.backward && (Math.abs(this.velocity) < 0.01)) { this.velocity = 0; }
-
-        // Apply Steering
-        const wheelBase = this.axle.front - this.axle.rear1;
-        const turnRadius = wheelBase / Math.tan(this.steer.angle);
-        const changeInDirection = this.velocity / turnRadius;
-
-        // Apply Rotation
-        this.direction += changeInDirection;
-
-        // Apply Velocity to Truck Position
-        this.center.x += this.velocity * Math.sin(this.direction);
-        this.center.y -= this.velocity * Math.cos(this.direction);
-    }
-
-    lookForTrailer() {
-        // Get the closest trailer by their hook location
-        const closestTrailer = this.trailers.reduce((closest, current) => {
-            const currentDistance = Math.hypot(
-                current.center.x - this.center.x,
-                current.center.y - this.center.y
-            );
-            const closestDistance = Math.hypot(
-                closest.center.x - this.center.x,
-                closest.center.y - this.center.y
-            );
-            return currentDistance < closestDistance ? current : closest;
-        });
-
-        // Check if the truck is close enough to the trailer to hook on
-        const hookLocation = closestTrailer.getHookLocation();
-        const distance = Math.hypot(
-            hookLocation.x - this.center.x,
-            hookLocation.y - this.center.y
-        );
-        if (distance < closestTrailer.hookingRadius) {
-            closestTrailer.canHook = true;
-        } else {
-            closestTrailer.canHook = false;
-        }
-    }
-
-    update() {
-        this.collisions();
-        this.move();
-
-        this.lookForTrailer();
     }
 
     debug() {

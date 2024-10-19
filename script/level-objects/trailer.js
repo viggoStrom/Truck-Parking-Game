@@ -61,7 +61,33 @@ class Trailer {
     }
 
     connectTo(truck) {
-        this.truck = truck;
+        if (truck) {
+            // Connecting
+
+            // Set references
+            this.truck = truck;
+            this.truck.trailer = this;
+
+            // Increase the mass of the truck to include this trailer
+            this.truck.mass.current = this.truck.mass.dry + this.mass.current;
+
+            // Update states
+            this.canHook = false;
+
+        } else {
+            // Disconnecting
+
+            // Update states
+            this.canHook = false;
+            this.truck.isHooking = false;
+
+            // Reset truck mass when disconnected
+            this.truck.mass.current = this.truck.mass.dry;
+
+            // Reset references
+            this.truck.trailer = null;
+            this.truck = null;
+        }
     }
 
     getHookLocation() {
