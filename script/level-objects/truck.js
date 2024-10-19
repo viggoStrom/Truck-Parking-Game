@@ -311,7 +311,7 @@ class Truck {
                         const dx = trailerCollider.x - truckCollider.x;
                         const dy = trailerCollider.y - truckCollider.y;
                         // Distance between the two colliders
-                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const distance = Math.hypot(dx, dy);
 
                         // If the distance is less than the sum of the radii, they are colliding
                         if (distance < trailerCollider.radius + truckCollider.radius) {
@@ -392,9 +392,38 @@ class Truck {
         this.center.y -= this.velocity * Math.cos(this.direction);
     }
 
+    lookForTrailer() {
+        // Get the closest trailer by their hook location
+        const closestTrailer = this.trailers.reduce((closest, current) => {
+            const currentDistance = Math.hypot(
+                current.center.x - this.center.x,
+                current.center.y - this.center.y
+            );
+            const closestDistance = Math.hypot(
+                closest.center.x - this.center.x,
+                closest.center.y - this.center.y
+            );
+            return currentDistance < closestDistance ? current : closest;
+        });
+
+        // Check if the truck is close enough to the trailer to hook on
+        const hookLocation = closestTrailer.getHookLocation();
+        const distance = Math.hypot(
+            hookLocation.x - this.center.x,
+            hookLocation.y - this.center.y
+        );
+        if (distance < closestTrailer.hookingRadius) {
+            closestTrailer.canHook = true;
+        } else {
+            closestTrailer.canHook = false;
+        }
+    }
+
     update() {
         this.collisions();
         this.move();
+
+        this.lookForTrailer();
     }
 
     debug() {

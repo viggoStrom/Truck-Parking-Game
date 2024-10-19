@@ -32,7 +32,7 @@ class UI {
     }
 
     hookOn(x, y) {
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.7;
 
         // Background
         ctx.fillStyle = "black";

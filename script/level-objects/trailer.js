@@ -41,6 +41,7 @@ class Trailer {
             rear2: 5, // dm
         };
         this.hookLocation = this.chassis.length * 6 / 8; // A fraction of the chassis length
+        this.hookingRadius = 7; // dm
 
         // Colliders
         this.colliders = [
@@ -61,6 +62,64 @@ class Trailer {
 
     connectTo(truck) {
         this.truck = truck;
+    }
+
+    getHookLocation() {
+        return {
+            x: this.center.x + Math.sin(this.direction) * this.hookLocation,
+            y: this.center.y - Math.cos(this.direction) * this.hookLocation,
+        }
+    }
+
+    getProjectedColliders() {
+        return this.colliders.map((collider) => {
+            return {
+                x: this.center.x - collider.offset * Math.cos(this.direction + Math.PI / 2),
+                y: this.center.y - collider.offset * Math.sin(this.direction + Math.PI / 2),
+                radius: collider.radius,
+            }
+        });
+    }
+
+    collisions() {
+        // Update Front Collider  
+        const projectedColliders = this.getProjectedColliders();
+
+        // Wall collisions
+        const wallCollide = (collider, index) => {
+            const wallBounceFactor = 0.2;
+            // X and Y offset from the center to the current collider
+            const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
+            const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
+
+            // Left wall
+            if (collider.x < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = x + collider.radius;
+            }
+            // Top wall
+            if (collider.y < collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = y + collider.radius;
+            }
+            // Right wall
+            if (collider.x > canvas.width - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.x = canvas.width + x - collider.radius;
+            }
+            // Bottom wall
+            if (collider.y > canvas.height - collider.radius) {
+                this.velocity = -this.velocity * wallBounceFactor;
+                this.center.y = canvas.height + y - collider.radius;
+            }
+        }
+
+        // Check and apply wall collisions to all colliders
+        projectedColliders.forEach(wallCollide);
+    }
+
+    update() {
+        this.collisions();
     }
 
     roundRect(x, y, w, h) {
@@ -149,57 +208,6 @@ class Trailer {
         wheels();
         curtain();
         hookOnUI();
-    }
-
-    getProjectedColliders() {
-        return this.colliders.map((collider) => {
-            return {
-                x: this.center.x - collider.offset * Math.cos(this.direction + Math.PI / 2),
-                y: this.center.y - collider.offset * Math.sin(this.direction + Math.PI / 2),
-                radius: collider.radius,
-            }
-        });
-    }
-
-    collisions() {
-        // Update Front Collider  
-        const projectedColliders = this.getProjectedColliders();
-
-        // Wall collisions
-        const wallCollide = (collider, index) => {
-            const wallBounceFactor = 0.2;
-            // X and Y offset from the center to the current collider
-            const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
-            const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
-
-            // Left wall
-            if (collider.x < collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.x = x + collider.radius;
-            }
-            // Top wall
-            if (collider.y < collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.y = y + collider.radius;
-            }
-            // Right wall
-            if (collider.x > canvas.width - collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.x = canvas.width + x - collider.radius;
-            }
-            // Bottom wall
-            if (collider.y > canvas.height - collider.radius) {
-                this.velocity = -this.velocity * wallBounceFactor;
-                this.center.y = canvas.height + y - collider.radius;
-            }
-        }
-
-        // Check and apply wall collisions to all colliders
-        projectedColliders.forEach(wallCollide);
-    }
-
-    update() {
-        this.collisions();
     }
 
     debug() {
