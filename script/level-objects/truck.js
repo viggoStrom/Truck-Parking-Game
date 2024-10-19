@@ -52,7 +52,7 @@ class Truck {
         ]
 
         // States
-        this.isHooking = false; // Whether the trucks fifth wheel is "locked" or not
+        this.isHooking = false; // Whether you're trying to hook on to a trailer
 
         // Set up inputs
         this.initInput();
