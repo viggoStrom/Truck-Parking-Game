@@ -58,6 +58,8 @@ class Trailer {
     init() {
         // All the trucks in the level
         this.trucks = this.level.gameElements.filter(element => element instanceof Truck);
+        // All the other trailers in the level
+        this.trailers = this.level.gameElements.filter(element => element instanceof Trailer).filter(trailer => trailer.id !== this.id);
     }
 
     connectTo(truck) {
@@ -137,8 +139,41 @@ class Trailer {
             }
         }
 
+        // Truck colliding with trailers
+        const trailerCollide = () => {
+            const trailerBounceFactor = 0.2;
+
+            this.trailers.forEach(trailer => {
+                const trailerColliders = trailer.getProjectedColliders();
+
+                // Check if any truck colliders are colliding with any trailer colliders
+                trailerColliders.forEach(trailerCollider => {
+                    projectedColliders.forEach(truckCollider => {
+                        const dx = trailerCollider.x - truckCollider.x;
+                        const dy = trailerCollider.y - truckCollider.y;
+                        // Distance between the two colliders
+                        const distance = Math.hypot(dx, dy);
+
+                        // If the distance is less than the sum of the radii, they are colliding
+                        if (distance < trailerCollider.radius + truckCollider.radius) {
+                            // Angle between the two colliders to calculate the push direction
+                            const angle = Math.atan2(dy, dx);
+                            const pushDistance = trailerCollider.radius + truckCollider.radius - distance;
+                            // Move the truck back
+                            this.center.x -= Math.cos(angle) * pushDistance;
+                            this.center.y -= Math.sin(angle) * pushDistance;
+
+                            // Reverse truck velocity to make it bounce
+                            this.velocity = -this.velocity * trailerBounceFactor;
+                        }
+                    });
+                });
+            });
+        }
+
         // Check and apply wall collisions to all colliders
         projectedColliders.forEach(wallCollide);
+        trailerCollide();
     }
 
     move() {

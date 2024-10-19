@@ -17,7 +17,7 @@ class Truck {
         };
         this.velocity = 0; // dm / frame
         this.forwardForce = 1000; // N
-        this.breakForce = 3000; // N
+        this.breakForce = 3500; // N
         this.dragForce = 200; // N
         this.mass = {
             current: 7000, // kg
@@ -61,8 +61,6 @@ class Truck {
     init() {
         // All the trailers in the level
         this.trailers = this.level.gameElements.filter(element => element instanceof Trailer);
-        // All the trucks in the level
-        this.trucks = this.level.gameElements.filter(element => element instanceof Truck);
     }
 
     initInput() {
