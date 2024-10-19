@@ -271,6 +271,7 @@ class Truck {
         // Wall collisions
         const wallCollide = (collider, index) => {
             const wallBounceFactor = 0.2;
+
             // X and Y offset from the center to the current collider
             const x = this.colliders[index].offset * Math.cos(this.direction + Math.PI / 2);
             const y = this.colliders[index].offset * Math.sin(this.direction + Math.PI / 2);
@@ -297,8 +298,41 @@ class Truck {
             }
         }
 
-        // Check and apply wall collisions to all colliders
+        // Truck colliding with trailers
+        const trailerCollide = () => {
+            const trailerBounceFactor = 0.2;
+
+            this.trailers.forEach(trailer => {
+                const trailerColliders = trailer.getProjectedColliders();
+
+                // Check if any truck colliders are colliding with any trailer colliders
+                trailerColliders.forEach(trailerCollider => {
+                    projectedColliders.forEach(truckCollider => {
+                        const dx = trailerCollider.x - truckCollider.x;
+                        const dy = trailerCollider.y - truckCollider.y;
+                        // Distance between the two colliders
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        // If the distance is less than the sum of the radii, they are colliding
+                        if (distance < trailerCollider.radius + truckCollider.radius) {
+                            // Angle between the two colliders to calculate the push direction
+                            const angle = Math.atan2(dy, dx);
+                            const pushDistance = trailerCollider.radius + truckCollider.radius - distance;
+                            // Move the truck back
+                            this.center.x -= Math.cos(angle) * pushDistance;
+                            this.center.y -= Math.sin(angle) * pushDistance;
+
+                            // Reverse truck velocity to make it bounce
+                            this.velocity = -this.velocity * trailerBounceFactor;
+                        }
+                    });
+                });
+            });
+        }
+
+        // Run all collisions
         projectedColliders.forEach(wallCollide);
+        trailerCollide();
     }
 
     move() {
