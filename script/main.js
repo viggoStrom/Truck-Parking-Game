@@ -21,8 +21,8 @@ const render = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Level renders all it's children
-    // level.render(debug = false);
-    level.render(debug=true);
+    level.render(debug = false);
+    // level.render(debug=true);
 
     window.requestAnimationFrame(render);
 }

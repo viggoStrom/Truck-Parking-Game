@@ -288,14 +288,12 @@ class Truck {
         // Disconnect
         // If it has a trailer and your pressing the hook button, disconnect
         if (this.trailer && !this.isHooking) {
-            console.log("disconnecting");
             this.trailer.connectTo(null);
         }
 
         // Hook on
         const closestTrailer = canHookOn(); // returns the closest trailer or null
         if (closestTrailer && this.isHooking && !this.trailer) {
-            console.log("hooking on");
             closestTrailer.connectTo(this);
         }
 
@@ -304,7 +302,6 @@ class Truck {
         // Safety detach
         // If the truck is too far from the trailer, detach it
         if (distance > this.trailer.hookingRadius * 2) {
-            console.log("safety detach");
             this.trailer.connectTo(null);
         }
     }
