@@ -72,6 +72,9 @@ class Truck {
             allowedToHook = false;
             setTimeout(() => {
                 allowedToHook = true;
+
+                // If you're hooking but there's no trailer, stop hooking
+                if (!this.trailer) { this.isHooking = false; }
             }, 500);
         }
 
@@ -247,7 +250,7 @@ class Truck {
         let distance;
 
         // Can the truck hook on to the closest trailer
-        const canHookOn = () => {
+        const getClosestTrailer = () => {
             // Get the closest trailer by their hook location
             const closestTrailer = this.trailers.reduce((closest, current) => {
                 const currentDistance = Math.hypot(
@@ -292,17 +295,9 @@ class Truck {
         }
 
         // Hook on
-        const closestTrailer = canHookOn(); // returns the closest trailer or null
+        const closestTrailer = getClosestTrailer();
         if (closestTrailer && this.isHooking && !this.trailer) {
             closestTrailer.connectTo(this);
-        }
-
-        if (!this.trailer) { return; } // If there is no trailer, don't run the rest of the code
-
-        // Safety detach
-        // If the truck is too far from the trailer, detach it
-        if (distance > this.trailer.hookingRadius * 2) {
-            this.trailer.connectTo(null);
         }
     }
 

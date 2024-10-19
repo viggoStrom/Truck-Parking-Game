@@ -61,25 +61,10 @@ class Trailer {
     }
 
     connectTo(truck) {
-        if (truck) {
-            // Connecting
-
-            // Set references
-            this.truck = truck;
-            this.truck.trailer = this;
-
-            // Increase the mass of the truck to include this trailer
-            this.truck.mass.current = this.truck.mass.dry + this.mass.current;
-
+        // If you pass null, it will disconnect
+        if (!truck && this.truck) {
             // Update states
-            this.canHook = false;
-
-        } else {
-            // Disconnecting
-
-            // Update states
-            this.canHook = false;
-            this.truck.isHooking = false;
+            this.truck.isHooking = false; // Release on the truck side
 
             // Reset truck mass when disconnected
             this.truck.mass.current = this.truck.mass.dry;
@@ -87,7 +72,19 @@ class Trailer {
             // Reset references
             this.truck.trailer = null;
             this.truck = null;
+            return;
         }
+
+        // Set references
+        this.truck = truck;
+        this.truck.trailer = this;
+
+        // Increase the mass of the truck to include this trailer
+        this.truck.mass.current = this.truck.mass.dry + this.mass.current;
+
+        // Update states
+        this.canHook = false;
+        this.truck.isHooking = true;
     }
 
     getHookLocation() {
@@ -152,7 +149,7 @@ class Trailer {
         this.direction = directionToTruck + Math.PI / 2;
 
         // this center should be a hook locations distance away from the trucks center
-        const hookLocation = this.truck.trailer.getHookLocation();
+        const hookLocation = this.getHookLocation();
         const dx = hookLocation.x - this.center.x;
         const dy = hookLocation.y - this.center.y;
         const hookDistance = Math.hypot(dx, dy);
