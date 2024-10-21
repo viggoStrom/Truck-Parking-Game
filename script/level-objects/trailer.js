@@ -183,14 +183,13 @@ class Trailer {
         const directionToTruck = Math.atan2(this.truck.center.y - this.center.y, this.truck.center.x - this.center.x);
         this.direction = directionToTruck + Math.PI / 2;
 
-        // this center should be a hook locations distance away from the trucks center
+        // Calculate the distance between this center and the hook location
         const hookLocation = this.getHookLocation();
         const dx = hookLocation.x - this.center.x;
         const dy = hookLocation.y - this.center.y;
         const hookDistance = Math.hypot(dx, dy);
 
-        // this.center.x = this.truck.center.x - Math.sin(this.direction) * this.hookLocation;
-        // this.center.y = this.truck.center.y + Math.cos(this.direction) * this.hookLocation;
+        // Keep the trailers center a hook locations distance away from the trucks center
         this.center.x = this.truck.center.x - Math.sin(this.direction) * hookDistance;
         this.center.y = this.truck.center.y + Math.cos(this.direction) * hookDistance;
     }
